@@ -1,0 +1,13 @@
+Steps for SourceTree
+
+To push new code into github:
+
+1-Create New Branch 'MyName'
+2- Commit your code (don't forget move all the file to commit)
+3-Double click on 'Master'
+4-Click on 'Pull'
+5- Click on Merge (merge 'YourName' branch into Master branch)
+(4 bis -Resolve conflict if there are some conflicts)
+6 - Push
+7-Delete your Branch
+8 - Drink some beer
