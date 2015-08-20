@@ -10,4 +10,3 @@ To push new code into github:
 (4 bis -Resolve conflict if there are some conflicts)
 6 - Push
 7-Delete your Branch
-8 - Drink some beer
