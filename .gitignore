@@ -1,0 +1,19 @@
+# Dependencies / build
+node_modules/
+.svelte-kit/
+build/
+dist/
+.wrangler/
+.env
+.env.*
+!.env.example
+
+# PRIVATE: the real nutritionist plan(s), transcriptions, photos/PDFs of diet sheets.
+# Only plans/demo.json (generic, invented values) is ever committed.
+plans/private/
+plans/*.private.json
+*.pdf
+
+# Local scratch
+.DS_Store
+*.log
