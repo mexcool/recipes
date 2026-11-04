@@ -80,9 +80,11 @@ Commit after each milestone with clear messages; push to the working branch. Kee
 
 ## Process
 
-- Use parallel agents for independent modules (core sub-modules, screens, worker) with clear file
-  ownership, then integrate; run an adversarial code review pass on `src/core` and the sync logic before
-  declaring a milestone done; fix what it finds.
+- **Agent budget (owner instruction): medium, not maximal.** Do most of the work directly. Use a workflow
+  only where modules are genuinely independent (for example core sub-modules, or screens once the core is
+  stable), with at most about six to eight agents per workflow and clear file ownership; this container runs
+  two agents at a time anyway. One adversarial review pass per milestone on `src/core` and the sync logic,
+  with two or three reviewers, then fix findings. No loop-until-dry or judge-panel patterns during the build.
 - Never ask the owner a question during the run; decide, record the decision in `docs/PROGRESS.md`, move on.
 - Re-verify library APIs against installed versions rather than memory; read the package's README or types
   when unsure.
