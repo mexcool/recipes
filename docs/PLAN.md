@@ -24,32 +24,45 @@ dress the result as a dish. The app never computes a gram; it reads grams from t
 
 **What we build.** A mobile-first PWA for two phones:
 
-1. **Stasera** — tonight's dish, two plates (hers in the plan's exact grams, his bigger), one line of
-   "why today", three buttons (*Cucina*, *Non mi va*, *Fatto*). Tomorrow's pranzo underneath, because weekday
-   pranzo is usually a lunchbox packed the night before.
-2. **Settimana** — a week drafted for her every Saturday night: the nutritionist's seven day-templates
-   permuted onto Mon–Sun, one approved alternative per slot, a dish per meal; she skims, swaps, confirms.
-3. **Spesa** — one shopping list in purchasable packs ("2 lattine da 400 g", "1 mozzarella"), in
-   supermarket walking order, offline, shared, with a small mid-week "spesa fresca" for bread and leaves.
-4. **Ricettario** — her own dishes, entered as *shapes* (roles → foods, steps) with no quantities, validated
-   against the plan ("fits the grain + legume pranzo with the quinoa alternative; protein slot unfilled").
-5. Later: "Nuova idea" (model-generated dish ideas inside a strict contract), photo/PDF import of a new
-   plan version, pantry-lite and leftovers, a "questions for the nutritionist" list, a macro estimate view.
+1. **Tonight** — tonight's dish, two plates (hers in the plan's exact grams, his scaled), one line of
+   "why today", three buttons (*Cook*, *Not tonight*, *Done*). Tomorrow's lunch underneath, because weekday
+   lunch is usually a lunchbox packed the night before.
+2. **Week** — a week drafted for her: the nutritionist's seven day-templates permuted onto Mon–Sun, one
+   approved alternative per slot, a dish per meal; she skims, swaps, locks, confirms.
+3. **Shopping** — one list in purchasable packs ("2 × 400 g cans", "1 mozzarella"), in supermarket walking
+   order, offline, shared, reconciled against pantry and purchases, with a small mid-week fresh list.
+4. **Recipes** — her own dishes, entered as *shapes* (roles → foods, steps) with no quantities, validated
+   against the plan ("fits the grain + legume lunch with the quinoa alternative; protein slot unfilled").
+5. Later: "New idea" (model-generated dish ideas inside a strict contract), photo/PDF import of a new
+   plan version, pantry-lite, a "questions for the nutritionist" list, a macro estimate view.
 
 **Decisions taken (and what was rejected).**
 
 | Decision | Chosen | Rejected, and why |
 |---|---|---|
 | Diet model | Two layers: the nutritionist's *exchange lists* (generative grammar) + her *7 day-templates* (approved preset). Versioned. | "Macro grams per meal" as the primary model: it is not how the plan is written and would let the app invent grams. Macros become a derived, labelled estimate (v2). |
-| Grams | Read from the plan, never computed. Dishes carry no quantities. | Recipe scaling / ingredient parsing / unit conversion on the critical path: unnecessary when dishes are shapes. |
-| Variety | Combinatorial chooser with per-axis cooldowns, taste memory inferred from taps, season table, pack economy. | A numeric optimiser (Eat This Much style): repeats by week 3–4 and produces bizarre combos. |
-| Compliance | An independent `checkWeek()` proves every generated week against every rule; the planner returns *why* when it cannot satisfy a rule. | "Correct by construction" with no checker: silently wrong on frequency rules. |
-| Model (LLM) | Build-time drafting of the seed dish book; runtime only for ideas, parsing and plan import, behind a strict JSON contract validated by the same code as hand-entered dishes. | A model in the first weekend: open-ended prompt tuning with no usage to tune against. |
+| Active prescription | The newer document (day templates and its rules) is the active profile; the older exchange lists are the grammar for validation and, later, compose mode. | Generating weeks from the older portions by default: the first week would contradict the sheet she is on now. |
+| Source conflicts | One active set of portions per profile revision; never average; a recipe never picks whichever document gives the convenient allowance; differences shown once in settings; weeks keep the revision they were generated from. | "Templates win, lists keep their own values" without a revision model: silently inconsistent. |
+| Grams | Read from the plan, never computed. Dishes carry no quantities. | Recipe scaling / ingredient parsing / unit conversion on the critical path: unnecessary when dishes are shapes. Quantities exist only on imported external recipes, mapped before use. |
+| Variety | Combinatorial chooser with per-axis cooldowns, taste memory inferred from taps, season table, pack economy. | A numeric optimiser (Eat This Much style): repeats by week 3–4 and produces bizarre combos. "A few variety preferences": too thin for the actual problem. |
+| Compliance | An independent `checkWeek()` proves every generated week against every rule; the planner returns *why* when it cannot satisfy a rule; frequency counts are shown as numbers for a stated scope, never as a blanket badge. | "Correct by construction" with no checker. |
+| Leftovers | Cooking *batches* with portions; meal slots *allocate* portions; frequencies count her eating occasions; the batch is bought once; cooked history is never rewritten. | A "cook double" flag: cannot represent allocations, counting or history. |
+| Partner scaling | One multiplier, same proportions as her plate, adjustable per meal; raw per-person lines and a combined pot. | Per-role multipliers plus pot-division policies in v1: a homogeneous dish cannot be split into arbitrary ratios; keep it for later. |
+| Model (LLM) | Build-time drafting of the seed dish book; runtime only for ideas, parsing and plan import, behind a strict JSON contract validated by the same code as hand-entered dishes; the app works with no model key. | A model in the first version's critical path: open-ended tuning with no usage to tune against. |
 | Price comparison | Out of scope (owner decision). Supermarkets matter for *what* and *in which pack*. | PlanMyMeals' scraping layer: contractually risky, and not the household's problem. |
-| Accounts | A capability link + QR for the two phones; one Cloudflare Worker + D1. | Supabase auth/RLS/Realtime for two people who share a kitchen; and its free-tier pause after 7 idle days. |
-| Code structure | One SvelteKit app with a pure `src/lib/core/` (zero DOM/network imports, enforced by lint). | A monorepo: an evening of tooling that buys nothing until a native rewrite exists. Capacitor wraps the same build. |
-| First weekend | One phone, local storage, no backend: she plans and shops on Sunday. | A weekend of types with no UI. |
-| Privacy | Real plan in a git-ignored file / in-app import; repo ships a generic demo plan; no personal data in the repo (it is public). | Committing the transcription "because it is just data". |
+| Hosting | Static-first: a local-first PWA that runs from any static host (a GitHub Pages workflow is included) with JSON export/import; an optional sync service (one Cloudflare Worker + D1, capability link + QR) for two phones. The core workflow never depends on the sync service. | Supabase auth/RLS/Realtime for two people who share a kitchen; and any design where a missing service stops planning or shopping. |
+| Code structure | One Vite app (React 19 + TypeScript) with a pure `src/core/` (zero DOM/network imports, enforced by lint). | A monorepo: an evening of tooling that buys nothing until a native rewrite exists. Capacitor wraps the same build. SvelteKit was the first pick; React is chosen for the owner's familiarity and lower API churn. |
+| Interface language | English UI; Italian ingredient and dish names alongside; strings organised for an Italian toggle later. | Italian-first UI (owner preference). |
+| First milestone | One phone, local storage, no backend: she plans and shops the first Sunday. | A milestone of types with no UI. |
+| Privacy | Real plan in a git-ignored file / in-app import / JSON export; repo ships a generic demo plan; no personal data in the repo (it is public). | Committing the transcription "because it is just data". |
+
+*Revision note.* This plan was revised after reviewing a second, independently written specification. Merged
+from it: the source-conflict and revision policy, the batch/allocation model for leftovers, frequency scope
+rules, shopping reconciliation arithmetic with a worked example, the shared oil allowance between cooking and
+dressing, meal-scope preservation of substitutions, data export, the accessibility bar, single-multiplier partner
+scaling, and acceptance tests as a table. Kept from the first draft: templates-first with the newer document
+active, dish-as-shape, the variety engine, time-aware swaps and the lunchbox view, store walking order and
+portions as pieces, and the nutritionist questions list.
 
 ---
 
@@ -193,9 +206,21 @@ Plan (one version; several versions over time, one active)
 └── rules: GlobalRules               // pairing locked, pasto libero, oil per day, weekend snack, free veg …
 ```
 
-Both documents are represented without loss. Where they disagree (the newer document raised the oil budget
-and changed one legume weight) the templates' values win for planning and the exchange list keeps its own
-values for validation, with the discrepancy surfaced in the "questions for the nutritionist" list.
+Both documents are represented without loss. They disagree in several places (the newer one lowers the
+canned-legume weight, lowers bread and meat weights slightly, raises the daily oil budget, drops the "light"
+qualifier on the fresh cheese and changes the afternoon snack). Policy:
+
+- A **profile revision** holds exactly one active set of portions. The first revision is the newer document's
+  values, labelled *draft, from the December sheet* until G. reviews it in settings; the differences are
+  shown once, side by side, in setup and settings, never in cooking flows.
+- Values are never averaged, and a recipe or validator never picks whichever document gives the convenient
+  allowance. A dish that only fits under the *other* document's values is reported as such and goes to the
+  nutritionist questions list.
+- Changing an amount creates a new revision and affects future generation only; existing weeks keep the
+  revision they were generated from until explicitly recalculated.
+- Meal scope is preserved: an option listed for lunch is not automatically a dinner substitution.
+- Grams are canonical where the sheet gives grams; spoon descriptions never override gram entries.
+  Genuinely unspecified amounts (free vegetables, "q.b." honey) stay unspecified rather than invented.
 
 Planning has two modes over the same pipeline:
 
@@ -216,7 +241,10 @@ Planning has two modes over the same pipeline:
 | No mid-morning snack on Saturday/Sunday | **Calendar** rule (not a template property): applied by weekday |
 | Weekly frequencies (cheese, eggs incl. breakfast eggs, red/white meat, legumes, tubers, fresh pasta…) | Planner (hard) + `checkWeek` + context-aware dish validation |
 | Allowed cooking methods and condiments; grated cheese on primi limited | Dish validation |
-| Weights refer to the plan version the week was generated from | `Week.planRef = {planId, version}` |
+| Oil: cooking and dressing share the meal's allowance; neither may claim the full amount on its own | Plate resolution; dish validation rejects steps that add unlisted oil |
+| Frequency scope: whole eggs count across breakfast, lunch, dinner, snacks and leftovers; a cheese garnish is not a cheese meal; ambiguous scopes are marked "for review" and shown as counts, not badges | `FrequencyRule.scope` + `checkWeek` + the Week screen |
+| Counting unit: her eating occasions, not batches cooked or the partner's portions | Batch/allocation model (6.2) |
+| Weights refer to the profile revision the week was generated from | `Week.planRef = {planId, revision}` |
 
 ### 4.3 Privacy and copyright
 
@@ -266,7 +294,8 @@ interface ExchangeSystem {
 }
 interface Exchange { foodId: string; qty: Qty; status: 'approved' | 'inferred' | 'confirmed'; sourcePage?: number }
 interface FrequencyRule { subject: Subgroup | { foodId: string }; per: 'week' | 'day' | 'main_meal';
-  min?: number; max?: number; countBy: 'meals' | 'units' }
+  min?: number; max?: number; countBy: 'meals' | 'units'; scope: 'all_meals' | 'main_meals'; garnishExempt?: boolean;
+  source: string; review?: boolean }                                      // review: ambiguous scope, shown as a count
 
 interface DayTemplate { n: 1|2|3|4|5|6|7; hint?: string; pranzo: MealTemplate; cena: MealTemplate | { libero: true } }
 interface MealTemplate { slots: Slot[]; note?: string }
@@ -289,25 +318,33 @@ interface Dish {
   freeVeg: string[]; condiments: string[]; methods: string[];
   signature: { format: 'bowl'|'piatto'|'zuppa'|'panino'|'pasta'|'insalatona'; temperature: 'caldo'|'freddo';
                flavour: 'mediterraneo'|'orientale'|'speziato'|'fresco'|'comfort' };
-  minutes: number; lunchboxOk: boolean; cookDouble?: boolean;
+  minutes: number; lunchboxOk: boolean; batchable?: { portionsMax: number; keepsDays: number };
   steps: string[];                                                     // '{{cereal}}' placeholders, no grams
   origin: 'seed' | 'user' | 'llm' | 'import'; status: 'approved' | 'proposed'; lastUsed?: string;
 }
 
 interface Member { id: string; name: string; constrained: boolean;
-  multiplier: Partial<Record<Role, number>> }                          // partner: cereal 1.5, bread 1.5, protein 1.3
+  multiplier: number }                                                  // partner: 1.0 by default, adjustable per meal; same proportions as her plate
 interface Week { id: string; planRef: { planId: string; version: number }; monday: string; seed: number;
   days: { date: string; template: number; colazione?: string; merenda?: string;
           pranzo: Meal; cena: Meal | { libero: true } }[] }
 interface Meal { choices: Record<string /*slotId*/, number /*option index*/>; dishId?: string; veg: string[];
-  plates: Plate[]; status: 'planned' | 'consumed' | 'swapped' | 'out' }   // 'consumed' gates what may change
+  plates: Plate[]; status: 'planned' | 'consumed' | 'swapped' | 'out' | 'unknown';   // 'consumed' gates what may change
+  batchId?: string; allocation?: { portionOf: string /*memberId*/; n: number }; locked?: boolean; partnerMultiplier?: number }
+
+// Cooking is separate from eating: a batch holds prepared portions; meal slots allocate them.
+interface Batch { id: string; dishId: string; cookedOn?: string; recipeSnapshot: Dish; choices: Meal['choices'];
+  portions: { memberId: string; n: number; lines: Plate['lines'] }[];   // what was cooked; immutable once cookedOn is set
+  allocated: { mealRef: { date: string; meal: 'pranzo' | 'cena' }; memberId: string }[] }  // never more than portions
 interface Plate { memberId: string; lines: { foodId: string; qty: Qty; display: string }[] } // "1 mozzarella (125 g)"
 
 interface ShoppingList { weekId: string; mode: 'draft' | 'snapshot';        // snapshot after the shop: deltas only
   items: ShoppingItem[]; deltas: ShoppingItem[]; freshRun?: ShoppingItem[] } // freshRun = mid-week bread/leaves
-interface ShoppingItem { key: string; foodId: string; needQty: Qty; buy: { n: number; unit: string }; leftoverG: number;
+interface ShoppingItem { key: string; foodId: string; form: 'raw' | 'dry' | 'canned_drained' | 'frozen';
+  demandG: number; pantryDeductedG: number; purchasedCoveredG: number;    // demand − pantry − covered = still to buy
+  buy?: { n: number; unit: string; leftoverG: number };                   // only when a pack size is known; else grams
   section: StoreSection; why: { date: string; meal: string; dish: string }[];
-  checked?: { by: string; at: string }; haveIt?: boolean; manual?: boolean }
+  checked?: { by: string; at: string; opId: string; rev: number }; haveIt?: boolean; manual?: boolean; note?: string }
 interface TasteMemory { key: string; score: number; lastEaten?: string; hard?: 'never' }
 interface Household { schemaVersion: number; token?: never /* server-side hash only */; members: Member[];
   plans: Plan[]; activePlanId: string; dishes: Dish[]; foods: Food[]; weeks: Week[]; taste: TasteMemory[];
@@ -392,16 +429,21 @@ boredom threshold the meal is queued for "Nuova idea" (6.6).
 carciofi). In-season ×1.5, out-of-season fresh ×0.5, frozen ×1. The "why today" line names the dominant
 factor (season, leftover, favourite, "nuovo").
 
-**Cook-double and leftovers:** dishes flagged `cookDouble` (a lentil sauce, a soup) can be planned once and
-reheated two days later; the second meal is still a plan-compliant meal with its own plate lines, and the
-list buys for both. Expected leftovers from pack rounding (half a tofu pack, half a pumpkin) earn a
-`leftoverBonus` for a dish within their shelf life.
+**Batches and leftovers:** a `batchable` dish (a lentil sauce, a soup) is cooked once as a *batch* with a
+known number of portions per person; later meal slots *allocate* those portions. The list buys the batch once;
+frequencies count each of her eating occasions; a lunch portion allocated to a dinner slot is validated
+against the dinner slot's foods and amounts (a valid lunch is not automatically a valid dinner); replacing a
+leftover meal detaches the allocation and exposes the unallocated portion; a cooked batch's ingredients and
+consumed allocations are never rewritten. Expected leftovers from pack rounding (half a tofu pack, half a
+pumpkin) earn a `leftoverBonus` for a dish within their shelf life.
 
 ### 6.3 Plates: read, never computed
 
-G.'s plate takes each slot's chosen option verbatim (raw), plus the oil line from the daily budget, plus
-toppings at their fixed amount; free vegetables and condiments are unquantified. The partner's plate
-multiplies slot lines by `multiplier[role]` (rounded to 10 g; counts stay counts). Pot = sum of plates.
+G.'s plate takes each slot's chosen option verbatim (raw), plus the oil line from the meal's allowance
+(shared between cooking and dressing), plus toppings at their fixed amount; free vegetables and condiments
+are unquantified. The partner's plate is hers × one multiplier (default 1.0, adjustable per meal; rounded
+to 10 g; counts stay counts), keeping the same ingredient proportions so a homogeneous dish divides cleanly.
+Pot = sum of plates. Per-role multipliers are deferred: they would require portioning before combining.
 
 Each dish binding has a **pot policy** that drives the cook-view wording: `separate` → "pesa a crudo:
 80 g · 120 g" (bread, cured meat, cheese); `together_weigh_cooked` → "cuoci 200 g in una pentola, poi pesa
@@ -426,10 +468,20 @@ freshRun   = bread, leafy vegetables, fresh cheese needed after Wednesday → a 
 group by section in the chosen store's walk order; each line keeps "why" (which meals)
 ```
 
-Aggregation is order-independent and idempotent (property test). **After the shop the list becomes a
-snapshot**: later plan edits produce *deltas* (added/removed lines) rather than re-generating and
-un-ticking everything (the Mealime lesson). Checked rows sink into "nel carrello" and the unchecked part
-never re-sorts mid-aisle. Share-as-text to WhatsApp as a fallback.
+Demand is generated from distinct cooking batches (not per eating occasion) plus fixed breakfasts, selected
+snacks and manual entries, in the food's purchase form (drained for cans, dry for dry legumes, frozen for
+frozen soup); a jar's net weight never stands in for its drained weight, and an unknown pack size stays a
+quantity in grams rather than an invented pack count.
+
+**Reconciliation.** Each line tracks `demandG`, `pantryDeductedG` (user-confirmed stock, deducted once) and
+`purchasedCoveredG` (what checked purchases actually cover, including pack rounding). Worked example: recipes
+need 900 g, the pantry has 100 g, packs are 500 g → buy 2 packs, 200 g remain after planned consumption;
+checking those two packs records 1,000 g covered; if demand later rises to 1,100 g the packs still cover it
+and nothing new appears; if it rises to 1,300 g only the uncovered remainder appears; if demand disappears
+the generated requirement is removed but a manual entry with the same food is untouched. An old check never
+makes genuinely uncovered demand look purchased. Aggregation is order-independent and idempotent (property
+tests). Checked rows sink into "in the cart" and the unchecked part never re-sorts mid-aisle. Copy/share as
+text as a fallback.
 
 ### 6.5 Validating a dish against the plan
 
@@ -438,7 +490,10 @@ never re-sorts mid-aisle. Share-as-text to WhatsApp as a fallback.
 foreign, violations, exchangeFallback}` ranked by completeness. Violations: foods outside the options,
 condiments or methods outside the rules, oil over budget, topping over the limit, sugary vegetables (soft).
 With a `week` the check is **context-aware**: it also counts weekly frequencies, so a cheese-based dish that
-is approved by the exchange lists is still flagged if it would be the third cheese meal that week.
+is approved by the exchange lists is still flagged if it would exceed the weekly cheese limit. A garnish
+(a teaspoon of grated cheese) is never accepted as the protein component, and a substitution is only accepted
+for the meal type it is listed for. A dish with unmapped quantities (an imported recipe) can be saved as a
+draft but never enters an automatically validated week.
 
 Expected verdicts for G.'s six dishes (acceptance tests, generic wording):
 quinoa + chickpeas + lettuce + tomatoes → *fits the grain + legume pranzo with the quinoa alternative; complete*.
@@ -490,8 +545,12 @@ planner until confirmed, and add it to the nutritionist questions.
 
 ## 7. UX (mobile-first, Italian first)
 
-Bottom tabs: **Stasera · Settimana · Spesa · Ricettario · Io**. Italian copy by default, English toggle;
-dish titles always in both languages. Large tap targets, no swipe gestures in the store, wake-lock in the cook view.
+Bottom tabs: **Tonight · Week · Shopping · Recipes · Settings**. English interface; Italian ingredient and
+dish names shown alongside (the shopping list is what she reads in an Italian supermarket); all visible
+strings live in one catalogue so an Italian toggle can be added. Accessibility bar: 360–430 px layouts with
+no horizontal scroll, 44 px primary touch targets, visible keyboard focus, labelled controls, readable
+contrast, reduced-motion support, and real empty/loading/offline/error states; no visible control is ever a
+placeholder. Large tap targets and no swipe gestures in the store; wake-lock in the cook view.
 
 **Stasera (Tuesday 18:30).** Tonight's dish: title, "why today", time/method glyphs, two plate chips
 ("G. · pollo 150 g · pane 60 g · verdure · olio 1½ cucchiai" / "M. · pollo 200 g · pane 90 g"),
@@ -520,9 +579,11 @@ next sync.
 **Ricettario.** Her dishes with "si adatta a…" badges; an editor that binds each ingredient to a role, free
 vegetable, condiment or oil by tapping — no quantities to type; inline verdict. Later: paste a URL or text.
 
-**Io.** Plan version (view; v1.2 import/review/activate; next appointment date), breakfast and merenda
-routine, dislikes, partner multipliers, "sto finendo" staples, household QR, language, **"Domande per la
-nutrizionista"** (collected from validator and import verdicts, exportable before the appointment).
+**Settings.** Diet profile (view and edit every amount; revisions; source differences shown side by side once;
+next appointment date), breakfast and snack routine, dislikes and allergies, partner multiplier, "running
+low" staples, household QR and sync status, **JSON export/import of the whole household** (so the first
+deployment is never the only copy), and **"Questions for the nutritionist"** (collected from validator and
+import verdicts, exportable before the appointment).
 
 **Partner's view.** Same app via the household QR; *Stasera* leads with his plate; he ticks the list and
 can mark "ho cucinato io"; a dish he proposes runs through the same validation and appears tagged "proposta da M.".
@@ -534,28 +595,36 @@ private plan is imported from JSON by the developer.
 
 ## 8. Architecture
 
-**Stack.** SvelteKit 3 + Svelte 5 + TypeScript, `@vite-pwa/sveltekit` (manifest, precache, offline
-fallback, "nuova versione" banner), `adapter-cloudflare` (one Worker serving static assets and the API
-routes), Zod 4, Paraglide for it/en, Vitest 5 + fast-check 4. `src/lib/core/` is the product: plan model,
-planner, checker, boredom model, plates, aggregation, validation, migrations. An ESLint
-`no-restricted-imports` rule forbids `$app`, `svelte`, DOM and `fetch` inside it. (If the owner prefers to
-maintain React, the UI layer swaps to React Router v7 or TanStack Start with `vite-plugin-pwa`; `core` is
-framework-agnostic. Decide before weekend 2.)
+**Stack.** Vite 8 + React 19 + TypeScript, TanStack Router, Tailwind CSS 4, `vite-plugin-pwa` (manifest,
+precache, offline fallback, "new version" banner), Zod 4, Dexie 4 (IndexedDB), Vitest + fast-check +
+Testing Library, Playwright for the phone-sized browser journey. `src/core/` is the product: plan model,
+revisions, planner, checker, boredom model, plates, batches, aggregation and reconciliation, validation,
+migrations. An ESLint `no-restricted-imports` rule forbids React, the DOM and `fetch` inside it. Exact
+versions are checked against the npm registry at build time.
 
-**Backend and data.** Weekend 1 has no backend: `core` runs against local storage on one phone. From
-weekend 2: Cloudflare Workers free tier + D1 (SQLite). Tables: `household(id, token_hash, doc JSON,
-schema_version, version, updated_at)`, `list_item(household_id, week_id, key, checked, by, at, op_id)`,
-`list_extra`. Endpoints: `GET /h/:t/state?since=v`; `PUT /h/:t/doc {baseVersion, doc}` (409 on conflict →
-reload; one person plans at a time); `POST /h/:t/list/ops` (idempotent batches, last-writer-wins by `at`).
-`household_id` is derived from the token in exactly one function so passkeys can front the same tables later.
+**Hosting, static-first.** The app is a local-first SPA: everything (plan, dishes, weeks, list, pantry,
+taste memory) lives in IndexedDB on the phone, with JSON export/import for backup and for moving to a second
+phone. It runs from any static host; the repo includes a GitHub Pages workflow. **Nothing in the core
+workflow depends on a server.**
+
+**Sync service (optional, for two phones).** A separate `worker/` on Cloudflare Workers free tier + D1
+(SQLite), tested locally with Wrangler's local mode. Tables: `household(id, token_hash, doc JSON,
+schema_version, version, updated_at)`, `list_op(household_id, week_id, key, checked, by, at, op_id, rev)`.
+Endpoints: `GET /h/:t/state?since=v`; `PUT /h/:t/doc {baseVersion, doc}` (409 on conflict → reload; one
+person plans at a time); `POST /h/:t/list/ops` (idempotent batches keyed by `op_id`, last-writer-wins by
+`at`, conflicts between a check and a newer uncheck surfaced, not overwritten). `household_id` is derived
+from the token in exactly one function so passkeys can front the same tables later. Deploying it requires
+the owner's Cloudflare login; the app shows sync as "not configured" until a service URL is set.
 
 **Identity.** A capability link `https://…/h/<128-bit token>`; the Worker stores `sha256(token)`; the second
-phone joins by QR; the token is rotatable from *Io*; `Referrer-Policy: no-referrer`. No accounts, no email
-templates, no RLS, no database that pauses over the holidays.
+phone joins by QR; the token is rotatable from Settings; `Referrer-Policy: no-referrer`. No accounts, no
+email templates, no database that pauses over the holidays. Private cached data is cleared when the household
+token changes; auth-bearing responses are never put in the shared service-worker cache.
 
-**Offline and sync.** IndexedDB (`idb-keyval` is enough) holds the household snapshot and an outbox of
-mutations, replayed on `online`, `visibilitychange` and after each mutation; no Background Sync on iOS.
-Polling on focus is sufficient for two phones (usually one cart); no websockets.
+**Offline and sync.** IndexedDB holds the household and an outbox of mutations with a unique operation id and
+the item revision observed; replayed on `online`, `visibilitychange`, after each mutation and on explicit
+refresh; no Background Sync on iOS. The server deduplicates retries by operation id. Polling on focus is
+sufficient for two phones (usually one cart); no websockets.
 
 **Schema evolution.** `schemaVersion` on the household doc and on the private fixture; `core/migrate.ts`
 runs on load (client and Worker); the service-worker update banner forces a refresh before a newer schema
@@ -589,16 +658,18 @@ app with real utility beyond a repackaged site.
 
 ## 9. Roadmap
 
+The first three milestones are built in one autonomous run (see [`BUILD.md`](BUILD.md) for the operational brief).
+
 | Phase | Scope |
 |---|---|
-| **Weekend 1 — one phone** | `core` types + Zod with `Qty`, `SlotOption` wildcard, `FrequencyRule`, `PotPolicy`; demo plan + private transcription (budget 3 h, settling drained-vs-net, tuber min/max and breakfast eggs with G.); ~60 foods with packs and sections; `generateWeek` + `checkWeek`, `resolvePlates`, `aggregate`, `validateDish`; a CLI that prints a week and its list; fast-check; seed book of ~40 dishes drafted with the model and reviewed with G.; *Stasera*, *Cucina*, *Settimana*, *Spesa* on local storage; static deploy. **She plans and shops on Sunday.** |
-| **Weekend 2 — two phones** | Worker + D1 + capability link + QR; outbox and offline *Spesa* with snapshot/deltas; PWA install and update banner; `schemaVersion` + migrate; *Non mi va* with the three deterministic, consumed-aware actions; iPhone test on both phones. |
-| **Weekend 3 — the loop** | 👍/👎/Fatto/mai più and per-axis cooldowns; "why today"; tomorrow's lunchbox on *Stasera*; *spesa fresca*; cook-double; *Ricettario* editor with inline verdict; cross-week history; share-as-text; acceptance tests and demo fixtures in the repo. |
-| **v1.1 — Nuova idea** | `/api/idea` behind a flag; proposed → approved book; *stessa spesa* swaps against this week's purchases; pack-reuse nudge; recipe text/URL parsing. |
-| **v1.2 — Import = acquisition** | Photo/PDF → Plan JSON with per-field confidence → review diff → activate; plan versions; first-run screen "Fotografa la tua dieta"; next-appointment reminder for the new sheet. |
-| **v1.3 — Pantry-lite** | "ho già" / "sto finendo", expected leftovers from pack rounding, leftover echo in the planner. |
-| **v2** | Compose mode over the exchange lists with `checkWeek` and Italian "unsatisfiable" messages; macro "stimato" panel and `classifyFood`; "Domande per la nutrizionista" export; verdict card and week image designed for sharing. |
-| **Later** | Passkeys, more households and more than one constrained member; Capacitor build; barcodes via Open Food Facts (isolated store). |
+| **M1 — core and fixtures** | `src/core` types + Zod with `Qty`, `SlotOption` wildcard, `FrequencyRule` scopes, revisions, batches; demo plan (generic values) + private plan file (git-ignored); ~60 foods with purchase forms, packs and sections; `generateWeek` + `checkWeek` with bounded search and explained infeasibility; `resolvePlates`; batches/allocations; `aggregate` + reconciliation; `validateDish`; migrations; the six dish verdicts; property tests. |
+| **M2 — the app on one phone** | Tonight (with tomorrow's lunchbox), Cook view, Week (generate, lock, replace with preview, move day as a pair, free meal, counts for the configured scopes), Shopping (packs, walking order per store, pantry deductions, covered purchases, manual items, fresh list, copy/export), Recipes (search, filters, feedback, editor with inline verdict, variations), Settings (profile revisions, source differences, routine, partner multiplier, export/import, nutritionist questions); seed book of ~40 dishes; PWA install and update banner; empty/loading/offline/error states; accessibility bar; Playwright phone journey; screenshots. |
+| **M3 — two phones** | `worker/` with D1, capability link + QR join, outbox with operation ids and revisions, conflict surfacing, two-session sync test in local mode; GitHub Pages workflow; deployment runbook for the owner's Cloudflare account. |
+| **v1.1 — New idea** | `/api/idea` behind a flag; proposed → approved book; "same shopping" swaps against this week's purchases; pack-reuse nudge; recipe text/URL parsing. |
+| **v1.2 — Import** | Photo/PDF → plan JSON with per-field confidence → review diff → new revision; first-run screen "photograph your diet sheet"; next-appointment reminder. |
+| **v1.3 — Pantry-lite** | "I have it" / "running low", expected leftovers from pack rounding, leftover echo in the planner. |
+| **v2** | Compose mode over the exchange lists with `checkWeek` and explained infeasibility; macro "estimated" panel and `classifyFood`; nutritionist questions export; verdict card and week image designed for sharing. |
+| **Later** | Passkeys, more households and more than one constrained member; Capacitor build; barcodes via Open Food Facts (isolated store); Italian interface toggle. |
 | **Never** | Prices, calorie tracking, a feed, anything social. |
 
 ---
@@ -637,11 +708,24 @@ Collected from the design reviews; the app will carry these in *Io → Domande p
 
 ---
 
-## 12. Acceptance criteria for the MVP
+## 12. Acceptance criteria
 
-- A generated week passes `checkWeek` for every seed and satisfies every rule in 4.2 on both the demo and the private plan.
-- The six example dishes produce the verdicts in 6.5.
-- G.'s plate lines equal the plan to the gram for every meal of every generated week; the partner's are multiples; the pot is the sum.
-- The shopping list for a generated week lists every food of every meal, including breakfast and snacks, in packs, in the chosen store's order, works offline, and survives a mid-week swap as deltas without un-ticking.
-- Nothing in the repository or its fixtures contains the nutritionist's documents or any personal data.
-- She uses it to plan and shop on the first Sunday.
+| Case | Required result |
+|---|---|
+| Generated week | Passes `checkWeek` for every seed on both the demo and the private plan: pairing intact, one free meal, vegetables at both main meals, oil within the daily budget, weekend snack rule by calendar, every option from the slot, every frequency rule met. |
+| Her plate | Slot lines equal the active revision to the gram for every meal of every generated week; the partner's lines are her lines × the multiplier; the pot is the sum. |
+| Source profile | A revision uses its own quantities consistently; a dish cannot silently change a legume weight by borrowing the other document's value; changing an amount creates a revision and old weeks keep theirs. |
+| Meal scope | Lunch and dinner amounts stay distinct; a lunch-only substitution is not validated at dinner; focaccia is not silently treated as bread. |
+| Oil and components | Cooking and dressing cannot each claim the full allowance; pasta with only a cheese garnish is not a complete meal. |
+| The six dishes | Produce the verdicts in 6.5. |
+| Weekly counting | Whole eggs include breakfast; leftovers count per her eating occasion; the partner's portions never consume her allowance; unknown meals leave coverage incomplete and say so. |
+| Feasibility | Locks and exclusions preserved; impossible combinations yield an actionable explanation within the work limit, never a relaxed rule or an endless loop. |
+| Batches | Two people and planned leftovers produce correct allocations and buy the batch once; a lunch-to-dinner allocation is validated against dinner; cooked ingredients and consumption history are never rewritten. |
+| Purchase arithmetic | 900 g demand / 100 g pantry / 500 g packs → 2 packs; raw, cooked and drained forms are never merged; unknown pack sizes stay in grams. |
+| Regeneration | Manual items survive; unrelated checks remain; only demand beyond pantry and covered purchases becomes additional shopping. |
+| Persistence | Reload and a second browser context see saved recipes, settings, weeks and shopping changes (local-first), and via the sync service when configured. |
+| Offline | The current list opens offline; checks survive reload and sync once; reconnect conflicts and increased demand are handled visibly. |
+| Access | With the sync service, a wrong token cannot read or modify another household; the household id is never client-supplied. |
+| Mobile journey | On a phone-sized browser: set up, generate a week, lock and replace a meal, add a dish, shop offline, open cooking instructions. Screenshots recorded. |
+| Privacy | Nothing in the repository, fixtures or screenshots contains the nutritionist's documents or personal data. |
+| Quality gates | Production build, type check, lint, unit/property tests and the Playwright journey all pass in CI. |
