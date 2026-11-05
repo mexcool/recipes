@@ -1,0 +1,265 @@
+/**
+ * Food catalogue: the ~110 foods named by the plan documents plus free vegetables, condiments and
+ * breakfast items. Italian names first (the shopping list is read in an Italian supermarket).
+ * Pack sizes follow what Sanremo chains stock (Carrefour, Coop, Pam, Conad); they are editable.
+ * Seasons are months when the vegetable is fresh and local in Liguria.
+ */
+import type { Food, PurchaseUnit, StoreSection, Subgroup } from '@/core/model';
+
+type FoodInput = Omit<Food, 'aliases' | 'isFreeVeg' | 'purchaseUnits' | 'staple'> &
+  Partial<Pick<Food, 'aliases' | 'isFreeVeg' | 'purchaseUnits' | 'staple'>>;
+
+const pack = (label: string, netG: number, usableG = netG, form: PurchaseUnit['form'] = 'raw', equalsPortion = false): PurchaseUnit => ({
+  label,
+  netG,
+  usableG,
+  form,
+  ...(equalsPortion ? { equalsPortion } : {}),
+});
+const can = (label: string, netG: number, drainedG: number): PurchaseUnit => pack(label, netG, drainedG, 'canned_drained');
+const counter = (): PurchaseUnit => pack('al banco (per 100 g)', 100, 100, 'raw');
+const piece = (label: string, g: number, equalsPortion = false): PurchaseUnit => pack(label, g, g, 'piece', equalsPortion);
+
+const f = (x: FoodInput): Food => ({
+  aliases: [],
+  isFreeVeg: false,
+  purchaseUnits: [],
+  staple: false,
+  ...x,
+});
+
+const veg = (id: string, nameIt: string, nameEn: string, season: number[], extra: Partial<FoodInput> = {}): Food =>
+  f({ id, nameIt, nameEn, subgroup: 'veg', isFreeVeg: true, season, section: 'produce', ...extra });
+
+const months = (from: number, to: number): number[] => {
+  const out: number[] = [];
+  for (let m = from; ; m = (m % 12) + 1) {
+    out.push(m);
+    if (m === to) break;
+  }
+  return out;
+};
+const ALL_YEAR = months(1, 12);
+
+export const FOODS: Food[] = [
+  // --- Cereals (interchangeable at equal grams) -------------------------------------------------
+  f({ id: 'riso_basmati', nameIt: 'riso basmati', nameEn: 'basmati rice', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 1 kg', 1000)] }),
+  f({ id: 'riso_rosso', nameIt: 'riso rosso', nameEn: 'red rice', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'riso_integrale', nameIt: 'riso integrale', nameEn: 'brown rice', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 1 kg', 1000)] }),
+  f({ id: 'riso_venere', nameIt: 'riso venere', nameEn: 'black venere rice', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pasta_kamut', nameIt: 'pasta di kamut', nameEn: 'kamut pasta', aliases: ['pasta di grano khorasan'], subgroup: 'cereal', cookedFactor: 2.0, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pasta_integrale', nameIt: 'pasta integrale', nameEn: 'wholewheat pasta', subgroup: 'cereal', cookedFactor: 2.0, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pasta_farro', nameIt: 'pasta di farro', nameEn: 'spelt pasta', subgroup: 'cereal', cookedFactor: 2.0, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pasta_legumi', nameIt: 'pasta di legumi', nameEn: 'legume pasta', subgroup: 'cereal', cookedFactor: 2.0, section: 'pasta_grains', purchaseUnits: [pack('confezione 250 g', 250)] }),
+  f({ id: 'farro', nameIt: 'farro perlato', nameEn: 'pearled spelt', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'orzo_perlato', nameIt: 'orzo perlato', nameEn: 'pearl barley', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'cous_cous', nameIt: 'cous cous', nameEn: 'couscous', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'quinoa', nameIt: 'quinoa', nameEn: 'quinoa', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'grano_saraceno', nameIt: 'grano saraceno', nameEn: 'buckwheat', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'miglio', nameIt: 'miglio', nameEn: 'millet', subgroup: 'cereal', cookedFactor: 2.5, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'polenta', nameIt: 'farina di mais per polenta', nameEn: 'polenta cornmeal', subgroup: 'cereal', cookedFactor: 4, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pastina', nameIt: 'pastina per minestre', nameEn: 'soup pasta', subgroup: 'cereal', cookedFactor: 2.0, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'gnocchi_patate', nameIt: 'gnocchi di patate', nameEn: 'potato gnocchi', subgroup: 'fresh_pasta', cookedFactor: 1.1, section: 'dairy', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pasta_uovo_fresca', nameIt: "pasta all'uovo fresca", nameEn: 'fresh egg pasta', subgroup: 'fresh_pasta', cookedFactor: 1.6, section: 'dairy', purchaseUnits: [pack('confezione 250 g', 250)] }),
+  // --- Bread and substitutes --------------------------------------------------------------------
+  f({ id: 'pane_integrale', nameIt: 'pane integrale', nameEn: 'wholemeal bread', subgroup: 'bread', section: 'bakery', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'pane_comune', nameIt: 'pane comune', nameEn: 'white bread', subgroup: 'bread', section: 'bakery', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'pane_segale', nameIt: 'pane di segale', nameEn: 'rye bread', subgroup: 'bread', section: 'bakery', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'pan_bauletto', nameIt: 'pan bauletto integrale', nameEn: 'sliced wholemeal loaf', subgroup: 'bread', pieceG: 28, section: 'breakfast_snacks', purchaseUnits: [pack('confezione 400 g', 400)] }),
+  f({ id: 'cracker_magretti', nameIt: 'cracker Magretti', nameEn: 'Magretti crackers', aliases: ['galbusera magretti'], subgroup: 'bread_sub', section: 'breakfast_snacks', purchaseUnits: [pack('confezione 380 g', 380)] }),
+  f({ id: 'gallette_farro', nameIt: 'gallette di farro', nameEn: 'spelt cakes', subgroup: 'bread_sub', pieceG: 10, section: 'breakfast_snacks', purchaseUnits: [pack('confezione 100 g', 100)] }),
+  f({ id: 'fette_wasa', nameIt: 'fette Wasa', nameEn: 'Wasa crispbread', subgroup: 'bread_sub', pieceG: 12, section: 'breakfast_snacks', purchaseUnits: [pack('confezione 275 g', 275)] }),
+  f({ id: 'mais_scatola', nameIt: 'mais dolce in scatola', nameEn: 'canned sweetcorn', subgroup: 'bread_sub', section: 'canned', purchaseUnits: [can('lattina 300 g (160 g sgocciolato)', 300, 160)] }),
+  f({ id: 'patate', nameIt: 'patate', nameEn: 'potatoes', subgroup: 'tuber', season: ALL_YEAR, section: 'produce', purchaseUnits: [pack('sacchetto 1 kg', 1000)] }),
+  // --- Legumes, tofu, veg burger ----------------------------------------------------------------
+  f({ id: 'ceci_scatola', nameIt: 'ceci in scatola', nameEn: 'canned chickpeas', subgroup: 'legume_canned', section: 'canned', purchaseUnits: [can('lattina 400 g (240 g sgocciolato)', 400, 240)] }),
+  f({ id: 'lenticchie_scatola', nameIt: 'lenticchie in scatola', nameEn: 'canned lentils', subgroup: 'legume_canned', section: 'canned', purchaseUnits: [can('lattina 400 g (240 g sgocciolato)', 400, 240)] }),
+  f({ id: 'fagioli_scatola', nameIt: 'fagioli cannellini in scatola', nameEn: 'canned cannellini beans', subgroup: 'legume_canned', section: 'canned', purchaseUnits: [can('lattina 400 g (240 g sgocciolato)', 400, 240)] }),
+  f({ id: 'fagioli_borlotti_scatola', nameIt: 'fagioli borlotti in scatola', nameEn: 'canned borlotti beans', subgroup: 'legume_canned', section: 'canned', purchaseUnits: [can('lattina 400 g (240 g sgocciolato)', 400, 240)] }),
+  f({ id: 'lenticchie_secche', nameIt: 'lenticchie secche', nameEn: 'dried lentils', subgroup: 'legume_dry', cookedFactor: 2.7, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500, 500, 'dry')] }),
+  f({ id: 'ceci_secchi', nameIt: 'ceci secchi', nameEn: 'dried chickpeas', subgroup: 'legume_dry', cookedFactor: 2.7, section: 'pasta_grains', purchaseUnits: [pack('confezione 500 g', 500, 500, 'dry')] }),
+  f({ id: 'tofu', nameIt: 'tofu al naturale', nameEn: 'tofu', subgroup: 'tofu', section: 'dairy', purchaseUnits: [pack('confezione 2 × 125 g', 250)] }),
+  f({ id: 'burger_vegetale', nameIt: 'burger vegetale', nameEn: 'veggie burger', aliases: ['kioene'], subgroup: 'veg_burger', pieceG: 100, section: 'dairy', purchaseUnits: [pack('confezione 2 × 100 g', 200)] }),
+  // --- Cheese and dairy -------------------------------------------------------------------------
+  f({ id: 'mozzarella', nameIt: 'mozzarella di vacca', nameEn: 'cow mozzarella', subgroup: 'cheese_fresh', pieceG: 125, section: 'dairy', purchaseUnits: [piece('mozzarella 125 g', 125, true)] }),
+  f({ id: 'mozzarella_light', nameIt: 'mozzarella light', nameEn: 'light mozzarella', subgroup: 'cheese_fresh', pieceG: 125, section: 'dairy', purchaseUnits: [piece('mozzarella light 125 g', 125, true)] }),
+  f({ id: 'ricotta', nameIt: 'ricotta di vacca', nameEn: 'ricotta', subgroup: 'cheese_fresh', section: 'dairy', purchaseUnits: [pack('vaschetta 250 g', 250)] }),
+  f({ id: 'primosale', nameIt: 'primo sale', nameEn: 'primo sale cheese', subgroup: 'cheese_fresh', section: 'dairy', purchaseUnits: [piece('confezione 100 g', 100, true)] }),
+  f({ id: 'fiocchi_di_latte', nameIt: 'fiocchi di latte', nameEn: 'cottage cheese', subgroup: 'cheese_fresh', section: 'dairy', purchaseUnits: [pack('vaschetta 200 g', 200, 200, 'raw', true)] }),
+  f({ id: 'feta_light', nameIt: 'feta light', nameEn: 'light feta', subgroup: 'cheese_fresh', section: 'dairy', purchaseUnits: [pack('confezione 200 g', 200)] }),
+  f({ id: 'philadelphia_light', nameIt: 'Philadelphia light', nameEn: 'light cream cheese', subgroup: 'cheese_fresh', section: 'dairy', purchaseUnits: [pack('confezione 150 g', 150)] }),
+  f({ id: 'parmigiano', nameIt: 'parmigiano grattugiato', nameEn: 'grated parmesan', subgroup: 'cheese_aged', section: 'dairy', purchaseUnits: [pack('busta 100 g', 100)] }),
+  f({ id: 'grana', nameIt: 'grana padano', nameEn: 'grana padano', subgroup: 'cheese_aged', section: 'dairy', purchaseUnits: [pack('pezzo 200 g', 200)] }),
+  f({ id: 'parmareggio_snack', nameIt: 'Parmareggio snack', nameEn: 'parmesan snack', subgroup: 'snack', pieceG: 20, section: 'dairy', purchaseUnits: [pack('confezione 5 × 20 g', 100)] }),
+  f({ id: 'yogurt_greco', nameIt: 'yogurt greco 0%', nameEn: '0% Greek yogurt', subgroup: 'yogurt', section: 'dairy', purchaseUnits: [piece('vasetto 150 g', 150, true)] }),
+  f({ id: 'yogurt_magro', nameIt: 'yogurt bianco magro', nameEn: 'low-fat plain yogurt', subgroup: 'yogurt', section: 'dairy', purchaseUnits: [piece('vasetto 125 g', 125, true)] }),
+  f({ id: 'kefir', nameIt: 'kefir bianco naturale', nameEn: 'plain kefir', subgroup: 'yogurt', section: 'dairy', purchaseUnits: [pack('bottiglia 500 ml', 500)] }),
+  f({ id: 'latte_ps', nameIt: 'latte parzialmente scremato', nameEn: 'semi-skimmed milk', subgroup: 'dairy', section: 'dairy', purchaseUnits: [pack('bottiglia 1 l', 1000)] }),
+  f({ id: 'albume', nameIt: 'albume', nameEn: 'egg whites', subgroup: 'egg', section: 'dairy', purchaseUnits: [pack('bottiglia 500 ml', 500)] }),
+  f({ id: 'uova', nameIt: 'uova', nameEn: 'eggs', subgroup: 'egg', pieceG: 60, section: 'dairy', purchaseUnits: [pack('confezione 6 uova', 360, 360, 'piece')] }),
+  // --- Meat and cured meat ----------------------------------------------------------------------
+  f({ id: 'petto_pollo', nameIt: 'petto di pollo', nameEn: 'chicken breast', subgroup: 'meat_white', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'tacchino_petto', nameIt: 'petto di tacchino', nameEn: 'turkey breast', subgroup: 'meat_white', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'pollo_coscia', nameIt: 'coscia di pollo senza pelle', nameEn: 'skinless chicken thigh', subgroup: 'meat_white', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'coniglio', nameIt: 'coniglio magro', nameEn: 'lean rabbit', subgroup: 'meat_white', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'vitello_filetto', nameIt: 'filetto di vitello', nameEn: 'veal fillet', subgroup: 'meat_red', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'vitellone_magro', nameIt: 'vitellone tagli magri', nameEn: 'lean beef', subgroup: 'meat_red', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'roast_beef', nameIt: 'roast-beef', nameEn: 'roast beef', subgroup: 'meat_red', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'carne_trita', nameIt: 'carne trita magra di manzo', nameEn: 'lean minced beef', subgroup: 'meat_red', section: 'meat', purchaseUnits: [counter()] }),
+  f({ id: 'bresaola', nameIt: 'bresaola', nameEn: 'bresaola', subgroup: 'cured', section: 'deli', purchaseUnits: [pack('vaschetta 70 g', 70, 70, 'raw', true)] }),
+  f({ id: 'prosciutto_cotto', nameIt: 'prosciutto cotto alta qualità sgrassato', nameEn: 'lean cooked ham', subgroup: 'cured', section: 'deli', purchaseUnits: [pack('vaschetta 100 g', 100)] }),
+  f({ id: 'prosciutto_crudo', nameIt: 'prosciutto crudo magro', nameEn: 'lean cured ham', subgroup: 'cured', section: 'deli', purchaseUnits: [pack('vaschetta 70 g', 70, 70, 'raw', true)] }),
+  f({ id: 'arrosto_pollo_affettato', nameIt: 'arrosto di pollo affettato', nameEn: 'sliced roast chicken', subgroup: 'cured', section: 'deli', purchaseUnits: [pack('vaschetta 100 g', 100, 100, 'raw', true)] }),
+  // --- Frozen soups ----------------------------------------------------------------------------
+  f({ id: 'minestrone_orogel', nameIt: 'Minestrone Leggerezza Orogel', nameEn: 'Orogel light minestrone (frozen)', subgroup: 'frozen_soup', section: 'frozen', purchaseUnits: [pack('busta 750 g', 750, 750, 'frozen')] }),
+  f({ id: 'verduri_orogel', nameIt: 'Verdurì Leggerezza Orogel', nameEn: 'Orogel light vegetable soup (frozen)', subgroup: 'frozen_soup', section: 'frozen', purchaseUnits: [pack('busta 750 g', 750, 750, 'frozen')] }),
+  // --- Fats --------------------------------------------------------------------------------------
+  f({ id: 'olio_evo', nameIt: "olio extravergine d'oliva", nameEn: 'extra-virgin olive oil', subgroup: 'oil', section: 'oils_condiments', staple: true, purchaseUnits: [pack('bottiglia 1 l', 1000)] }),
+  f({ id: 'avocado', nameIt: 'avocado', nameEn: 'avocado', subgroup: 'oil', pieceG: 120, season: ALL_YEAR, section: 'produce', purchaseUnits: [piece('1 avocado (≈120 g polpa)', 120)] }),
+  f({ id: 'olive', nameIt: 'olive denocciolate', nameEn: 'pitted olives', subgroup: 'oil', section: 'canned', purchaseUnits: [can('vasetto 300 g (150 g sgocciolato)', 300, 150)] }),
+  // --- Breakfast and snacks --------------------------------------------------------------------
+  f({ id: 'granola', nameIt: 'granola / muesli', nameEn: 'granola or muesli', subgroup: 'snack', section: 'breakfast_snacks', purchaseUnits: [pack('confezione 300 g', 300)] }),
+  f({ id: 'biscotti_oro_saiwa', nameIt: 'biscotti Oro Saiwa', nameEn: 'Oro Saiwa biscuits', subgroup: 'snack', pieceG: 7, section: 'breakfast_snacks', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'fiocchi_avena', nameIt: "fiocchi d'avena", nameEn: 'rolled oats', subgroup: 'cereal', section: 'breakfast_snacks', purchaseUnits: [pack('confezione 500 g', 500)] }),
+  f({ id: 'cornflakes', nameIt: 'cornflakes', nameEn: 'cornflakes', subgroup: 'cereal', section: 'breakfast_snacks', purchaseUnits: [pack('confezione 375 g', 375)] }),
+  f({ id: 'weetabix', nameIt: 'Weetabix', nameEn: 'Weetabix', subgroup: 'cereal', pieceG: 19, section: 'breakfast_snacks', purchaseUnits: [pack('confezione 430 g', 430)] }),
+  f({ id: 'cioccolato_fondente', nameIt: 'cioccolato fondente 80%', nameEn: '80% dark chocolate', subgroup: 'sweet', section: 'breakfast_snacks', purchaseUnits: [pack('tavoletta 100 g', 100)] }),
+  f({ id: 'burro_arachidi', nameIt: 'burro di arachidi', nameEn: 'peanut butter', subgroup: 'nut', section: 'breakfast_snacks', staple: true, purchaseUnits: [pack('vasetto 350 g', 350)] }),
+  f({ id: 'miele', nameIt: 'miele', nameEn: 'honey', subgroup: 'sweet', section: 'breakfast_snacks', staple: true, purchaseUnits: [pack('vasetto 500 g', 500)] }),
+  f({ id: 'marmellata', nameIt: 'confettura di frutta', nameEn: 'fruit jam', subgroup: 'sweet', section: 'breakfast_snacks', staple: true, purchaseUnits: [pack('vasetto 350 g', 350)] }),
+  f({ id: 'noci', nameIt: 'noci sgusciate', nameEn: 'walnuts', subgroup: 'nut', section: 'breakfast_snacks', purchaseUnits: [pack('confezione 200 g', 200)] }),
+  f({ id: 'mandorle', nameIt: 'mandorle', nameEn: 'almonds', subgroup: 'nut', section: 'breakfast_snacks', purchaseUnits: [pack('confezione 200 g', 200)] }),
+  f({ id: 'cannella', nameIt: 'cannella', nameEn: 'cinnamon', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  // --- Fruit ------------------------------------------------------------------------------------
+  f({ id: 'banana', nameIt: 'banana', nameEn: 'banana', subgroup: 'fruit', pieceG: 120, season: ALL_YEAR, section: 'produce', purchaseUnits: [piece('1 banana', 120)] }),
+  f({ id: 'mela', nameIt: 'mela', nameEn: 'apple', subgroup: 'fruit', pieceG: 150, season: months(9, 5), section: 'produce', purchaseUnits: [piece('1 mela', 150, true)] }),
+  f({ id: 'pera', nameIt: 'pera', nameEn: 'pear', subgroup: 'fruit', pieceG: 150, season: months(9, 2), section: 'produce', purchaseUnits: [piece('1 pera', 150, true)] }),
+  f({ id: 'arancia', nameIt: 'arancia', nameEn: 'orange', subgroup: 'fruit', pieceG: 150, season: months(11, 4), section: 'produce', purchaseUnits: [piece('1 arancia', 150, true)] }),
+  f({ id: 'clementine', nameIt: 'clementine', nameEn: 'clementines', subgroup: 'fruit', pieceG: 50, season: months(11, 2), section: 'produce', purchaseUnits: [pack('rete 1 kg', 1000)] }),
+  f({ id: 'kiwi', nameIt: 'kiwi', nameEn: 'kiwi', subgroup: 'fruit', pieceG: 75, season: months(11, 4), section: 'produce', purchaseUnits: [piece('1 kiwi', 75)] }),
+  f({ id: 'fragole', nameIt: 'fragole', nameEn: 'strawberries', subgroup: 'fruit', season: months(4, 6), section: 'produce', purchaseUnits: [pack('cestino 250 g', 250)] }),
+  f({ id: 'mirtilli', nameIt: 'mirtilli', nameEn: 'blueberries', subgroup: 'fruit', season: months(6, 9), section: 'produce', purchaseUnits: [pack('cestino 125 g', 125)] }),
+  f({ id: 'pesca', nameIt: 'pesca', nameEn: 'peach', subgroup: 'fruit', pieceG: 200, season: months(6, 9), section: 'produce', purchaseUnits: [piece('1 pesca', 200, true)] }),
+  f({ id: 'melone', nameIt: 'melone', nameEn: 'melon', subgroup: 'fruit', season: months(6, 9), section: 'produce', purchaseUnits: [piece('1 melone (≈1 kg)', 1000)] }),
+  f({ id: 'anguria', nameIt: 'anguria', nameEn: 'watermelon', subgroup: 'fruit', season: months(6, 8), section: 'produce', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'melograno', nameIt: 'melograno', nameEn: 'pomegranate', subgroup: 'fruit', pieceG: 150, season: months(10, 12), section: 'produce', purchaseUnits: [piece('1 melograno', 150, true)] }),
+  f({ id: 'ananas', nameIt: 'ananas', nameEn: 'pineapple', subgroup: 'fruit', season: ALL_YEAR, section: 'produce', purchaseUnits: [piece('1 ananas (≈900 g polpa)', 900)] }),
+  f({ id: 'prugne', nameIt: 'prugne', nameEn: 'plums', subgroup: 'fruit', pieceG: 50, season: months(7, 9), section: 'produce', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'pompelmo', nameIt: 'pompelmo', nameEn: 'grapefruit', subgroup: 'fruit', pieceG: 200, season: months(11, 4), section: 'produce', purchaseUnits: [piece('1 pompelmo', 200, true)] }),
+  f({ id: 'uva', nameIt: 'uva', nameEn: 'grapes', subgroup: 'fruit', season: months(8, 11), section: 'produce', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'cachi', nameIt: 'cachi', nameEn: 'persimmon', subgroup: 'fruit', pieceG: 150, season: months(10, 12), section: 'produce', purchaseUnits: [piece('1 caco', 150)] }),
+  f({ id: 'fichi', nameIt: 'fichi', nameEn: 'figs', subgroup: 'fruit', pieceG: 50, season: months(8, 10), section: 'produce', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'albicocche', nameIt: 'albicocche', nameEn: 'apricots', subgroup: 'fruit', pieceG: 45, season: months(6, 7), section: 'produce', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  f({ id: 'ciliegie', nameIt: 'ciliegie', nameEn: 'cherries', subgroup: 'fruit', season: months(5, 7), section: 'produce', purchaseUnits: [pack('al banco (per 100 g)', 100)] }),
+  // --- Free vegetables (Liguria seasons) ------------------------------------------------------
+  veg('zucchine', 'zucchine', 'courgettes', months(5, 10)),
+  veg('pomodori', 'pomodori', 'tomatoes', months(6, 10)),
+  veg('pomodorini', 'pomodorini', 'cherry tomatoes', months(5, 10)),
+  veg('melanzane', 'melanzane', 'aubergines', months(6, 10)),
+  veg('broccoli', 'broccoli', 'broccoli', months(10, 3)),
+  veg('cavolfiore', 'cavolfiore', 'cauliflower', months(10, 3)),
+  veg('cavolo_nero', 'cavolo nero', 'cavolo nero kale', months(10, 3)),
+  veg('verza', 'verza', 'savoy cabbage', months(10, 3)),
+  veg('cavolo_cappuccio', 'cavolo cappuccio', 'white cabbage', months(10, 4)),
+  veg('spinaci', 'spinaci', 'spinach', months(10, 4)),
+  veg('bietole', 'bietole', 'chard', ALL_YEAR),
+  veg('lattuga', 'lattuga', 'lettuce', ALL_YEAR),
+  veg('rucola', 'rucola', 'rocket', ALL_YEAR),
+  veg('indivia', 'indivia', 'endive', months(10, 3)),
+  veg('radicchio', 'radicchio', 'radicchio', months(10, 3)),
+  veg('cetrioli', 'cetrioli', 'cucumbers', months(5, 9)),
+  veg('finocchi', 'finocchi', 'fennel', months(10, 4)),
+  veg('zucca', 'zucca', 'pumpkin', months(9, 2)),
+  veg('carciofi', 'carciofi', 'artichokes', [2, 3, 4, 5, 11, 12]),
+  veg('asparagi', 'asparagi', 'asparagus', months(3, 6)),
+  veg('fagiolini', 'fagiolini', 'green beans', months(6, 9)),
+  veg('funghi', 'funghi champignon', 'mushrooms', ALL_YEAR),
+  veg('porri', 'porri', 'leeks', months(10, 3)),
+  veg('sedano', 'sedano', 'celery', months(9, 4)),
+  veg('cipolla', 'cipolla', 'onion', ALL_YEAR),
+  veg('cipollotti', 'cipollotti', 'spring onions', months(3, 7)),
+  veg('agretti', 'agretti', 'agretti', months(3, 5)),
+  veg('cime_di_rapa', 'cime di rapa', 'turnip tops', months(11, 3)),
+  veg('peperoni', 'peperoni', 'peppers', months(6, 10), { subgroup: 'veg_sugary' }),
+  veg('carote', 'carote', 'carrots', ALL_YEAR, { subgroup: 'veg_sugary' }),
+  veg('barbabietola', 'barbabietola', 'beetroot', months(6, 11), { subgroup: 'veg_sugary' }),
+  // --- Condiments and aromatics (allowed by the plan) ------------------------------------------
+  f({ id: 'aglio', nameIt: 'aglio', nameEn: 'garlic', subgroup: 'condiment', section: 'produce', staple: true }),
+  f({ id: 'limone', nameIt: 'limone', nameEn: 'lemon', subgroup: 'condiment', pieceG: 100, season: ALL_YEAR, section: 'produce', purchaseUnits: [piece('1 limone', 100)] }),
+  f({ id: 'basilico', nameIt: 'basilico', nameEn: 'basil', subgroup: 'condiment', season: months(5, 10), section: 'produce' }),
+  f({ id: 'prezzemolo', nameIt: 'prezzemolo', nameEn: 'parsley', subgroup: 'condiment', season: ALL_YEAR, section: 'produce' }),
+  f({ id: 'rosmarino', nameIt: 'rosmarino', nameEn: 'rosemary', subgroup: 'condiment', section: 'produce', staple: true }),
+  f({ id: 'erbe', nameIt: 'erbe aromatiche', nameEn: 'mixed herbs', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'spezie', nameIt: 'spezie', nameEn: 'spices', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'peperoncino', nameIt: 'peperoncino', nameEn: 'chilli', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'aceto', nameIt: 'aceto di mele o di vino bianco', nameEn: 'apple or white-wine vinegar', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'passata', nameIt: 'passata di pomodoro', nameEn: 'tomato passata', subgroup: 'condiment', section: 'canned', purchaseUnits: [pack('bottiglia 700 g', 700)] }),
+  f({ id: 'pelati', nameIt: 'pomodori pelati', nameEn: 'canned peeled tomatoes', subgroup: 'condiment', section: 'canned', purchaseUnits: [pack('lattina 400 g', 400)] }),
+  f({ id: 'brodo_vegetale', nameIt: 'brodo vegetale (dado o fatto in casa)', nameEn: 'vegetable stock', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'vino_bianco', nameIt: 'vino bianco per cucinare', nameEn: 'white wine for cooking', subgroup: 'condiment', section: 'drinks', staple: true }),
+  f({ id: 'salsa_pomodoro', nameIt: 'sugo di pomodoro fresco', nameEn: 'fresh tomato sauce', subgroup: 'condiment', section: 'canned', purchaseUnits: [pack('bottiglia 700 g', 700)] }),
+  f({ id: 'senape', nameIt: 'senape', nameEn: 'mustard', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'capperi', nameIt: 'capperi', nameEn: 'capers', subgroup: 'condiment', section: 'canned', staple: true }),
+  f({ id: 'sale', nameIt: 'sale', nameEn: 'salt', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'pepe', nameIt: 'pepe', nameEn: 'pepper', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'zenzero', nameIt: 'zenzero', nameEn: 'ginger', subgroup: 'condiment', section: 'produce', staple: true }),
+  f({ id: 'curry', nameIt: 'curry', nameEn: 'curry powder', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'paprika', nameIt: 'paprika', nameEn: 'paprika', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'cumino', nameIt: 'cumino', nameEn: 'cumin', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'origano', nameIt: 'origano', nameEn: 'oregano', subgroup: 'condiment', section: 'oils_condiments', staple: true }),
+  f({ id: 'salvia', nameIt: 'salvia', nameEn: 'sage', subgroup: 'condiment', section: 'produce', staple: true }),
+  f({ id: 'menta', nameIt: 'menta', nameEn: 'mint', subgroup: 'condiment', season: months(4, 10), section: 'produce' }),
+];
+
+export const FOOD_BY_ID: ReadonlyMap<string, Food> = new Map(FOODS.map((x) => [x.id, x]));
+
+export function foodById(id: string, overrides?: readonly Food[]): Food {
+  const o = overrides?.find((x) => x.id === id);
+  const f = o ?? FOOD_BY_ID.get(id);
+  if (!f) throw new Error(`Unknown food: ${id}`);
+  return f;
+}
+
+export function catalogue(overrides?: readonly Food[]): Food[] {
+  if (!overrides?.length) return FOODS;
+  const map = new Map(FOODS.map((x) => [x.id, x]));
+  for (const o of overrides) map.set(o.id, o);
+  return [...map.values()];
+}
+
+export function foodsOfSubgroup(subgroup: Subgroup, foods: readonly Food[] = FOODS): Food[] {
+  return foods.filter((x) => x.subgroup === subgroup);
+}
+
+export function inSeason(food: Food, month: number): boolean {
+  return !food.season || food.season.includes(month);
+}
+
+/** Store walk order: sections in the order you meet them in a typical Italian supermarket. */
+export const STORE_ORDERS: Record<string, StoreSection[]> = {
+  coop: ['produce', 'bakery', 'meat', 'deli', 'dairy', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks', 'frozen', 'drinks'],
+  carrefour: ['produce', 'bakery', 'deli', 'meat', 'dairy', 'frozen', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks', 'drinks'],
+  pam: ['produce', 'deli', 'meat', 'dairy', 'bakery', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks', 'frozen', 'drinks'],
+  conad: ['produce', 'bakery', 'meat', 'deli', 'dairy', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks', 'frozen', 'drinks'],
+};
+
+export const STORES: { id: string; name: string }[] = [
+  { id: 'coop', name: 'Coop (Corso Matuzia)' },
+  { id: 'carrefour', name: 'Carrefour Market' },
+  { id: 'pam', name: 'Pam' },
+  { id: 'conad', name: 'Conad City' },
+];
+
+export const SECTION_LABELS: Record<StoreSection, { en: string; it: string }> = {
+  produce: { en: 'Fruit & vegetables', it: 'Ortofrutta' },
+  bakery: { en: 'Bakery', it: 'Pane' },
+  meat: { en: 'Meat', it: 'Carne' },
+  deli: { en: 'Deli & cured meats', it: 'Salumi' },
+  dairy: { en: 'Dairy, eggs & fresh', it: 'Latticini, uova e freschi' },
+  pasta_grains: { en: 'Pasta, rice & grains', it: 'Pasta, riso e cereali' },
+  canned: { en: 'Canned & jars', it: 'Conserve' },
+  oils_condiments: { en: 'Oil & condiments', it: 'Olio e condimenti' },
+  breakfast_snacks: { en: 'Breakfast & snacks', it: 'Colazione e snack' },
+  frozen: { en: 'Frozen', it: 'Surgelati' },
+  drinks: { en: 'Drinks', it: 'Bevande' },
+};

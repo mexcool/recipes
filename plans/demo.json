@@ -1,0 +1,1916 @@
+{
+  "id": "plan-demo",
+  "name": "Demo plan",
+  "memberId": "g",
+  "revisions": [
+    {
+      "revision": 1,
+      "label": "Demo plan",
+      "validFrom": "2026-01-01",
+      "status": "reviewed",
+      "sourceNote": "Invented demo values. Not a real prescription.",
+      "exchange": {
+        "lists": [
+          {
+            "meal": "pranzo",
+            "list": "A",
+            "items": [
+              {
+                "subgroup": "cereal",
+                "qty": {
+                  "kind": "g",
+                  "g": 70
+                },
+                "label": "any cereal",
+                "status": "approved"
+              },
+              {
+                "foodId": "pane_integrale",
+                "qty": {
+                  "kind": "g",
+                  "g": 70
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "pasta_uovo_fresca",
+                "qty": {
+                  "kind": "g",
+                  "g": 80
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "mais_scatola",
+                "qty": {
+                  "kind": "g",
+                  "g": 140
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "gnocchi_patate",
+                "qty": {
+                  "kind": "g",
+                  "g": 160
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "patate",
+                "qty": {
+                  "kind": "g",
+                  "g": 200
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "gallette_farro",
+                "qty": {
+                  "kind": "count",
+                  "count": 4,
+                  "unitG": 10
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "pranzo",
+            "list": "B",
+            "items": [
+              {
+                "subgroup": "legume_dry",
+                "qty": {
+                  "kind": "g",
+                  "g": 35
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "legume_canned",
+                "qty": {
+                  "kind": "g",
+                  "g": 110
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "tofu",
+                "qty": {
+                  "kind": "g",
+                  "g": 130
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "burger_vegetale",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "cheese_aged",
+                "qty": {
+                  "kind": "g",
+                  "g": 40
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "mozzarella",
+                "qty": {
+                  "kind": "g",
+                  "g": 125
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "feta_light",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "ricotta",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "fiocchi_di_latte",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "primosale",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "philadelphia_light",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "meat_white",
+                "qty": {
+                  "kind": "g",
+                  "g": 140
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "meat_red",
+                "qty": {
+                  "kind": "g",
+                  "g": 140
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "cured",
+                "qty": {
+                  "kind": "g",
+                  "g": 70
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "arrosto_pollo_affettato",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "uova",
+                "qty": {
+                  "kind": "count",
+                  "count": 2,
+                  "unitG": 60
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "pranzo",
+            "list": "C",
+            "items": [
+              {
+                "subgroup": "veg",
+                "qty": {
+                  "kind": "free"
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "pranzo",
+            "list": "D",
+            "items": [
+              {
+                "foodId": "olio_evo",
+                "qty": {
+                  "kind": "g",
+                  "g": 12
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "cena",
+            "list": "A",
+            "items": [
+              {
+                "foodId": "pastina",
+                "qty": {
+                  "kind": "g",
+                  "g": 30
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "orzo_perlato",
+                "qty": {
+                  "kind": "g",
+                  "g": 30
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "gallette_farro",
+                "qty": {
+                  "kind": "count",
+                  "count": 4,
+                  "unitG": 10
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "pane_integrale",
+                "qty": {
+                  "kind": "g",
+                  "g": 45
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "mais_scatola",
+                "qty": {
+                  "kind": "g",
+                  "g": 140
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "patate",
+                "qty": {
+                  "kind": "g",
+                  "g": 170
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "cena",
+            "list": "B",
+            "items": [
+              {
+                "subgroup": "legume_dry",
+                "qty": {
+                  "kind": "g",
+                  "g": 35
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "legume_canned",
+                "qty": {
+                  "kind": "g",
+                  "g": 110
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "burger_vegetale",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "cheese_aged",
+                "qty": {
+                  "kind": "g",
+                  "g": 40
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "mozzarella",
+                "qty": {
+                  "kind": "g",
+                  "g": 125
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "feta_light",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "ricotta",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "fiocchi_di_latte",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "primosale",
+                "qty": {
+                  "kind": "g",
+                  "g": 100
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "meat_white",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "meat_red",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "cured",
+                "qty": {
+                  "kind": "g",
+                  "g": 80
+                },
+                "status": "approved"
+              },
+              {
+                "foodId": "uova",
+                "qty": {
+                  "kind": "count",
+                  "count": 2,
+                  "unitG": 60
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "cena",
+            "list": "C",
+            "items": [
+              {
+                "subgroup": "veg",
+                "qty": {
+                  "kind": "free"
+                },
+                "status": "approved"
+              },
+              {
+                "subgroup": "frozen_soup",
+                "qty": {
+                  "kind": "g",
+                  "g": 300
+                },
+                "status": "approved"
+              }
+            ]
+          },
+          {
+            "meal": "cena",
+            "list": "D",
+            "items": [
+              {
+                "foodId": "olio_evo",
+                "qty": {
+                  "kind": "g",
+                  "g": 12
+                },
+                "status": "approved"
+              }
+            ]
+          }
+        ],
+        "oilEquivalents": [
+          {
+            "foodId": "avocado",
+            "qtyPer10gOil": {
+              "kind": "g",
+              "g": 50
+            }
+          },
+          {
+            "foodId": "olive",
+            "qtyPer10gOil": {
+              "kind": "g",
+              "g": 40
+            }
+          }
+        ],
+        "cookedFactors": {
+          "pasta_long": 2.4,
+          "pasta_short": 2,
+          "rice_grains": 2.5,
+          "gnocchi": 1.1
+        },
+        "frequency": [
+          {
+            "id": "legumes",
+            "label": "Legumes at least 3 times a week",
+            "subject": {
+              "subgroups": [
+                "legume_canned",
+                "legume_dry",
+                "tofu"
+              ]
+            },
+            "per": "week",
+            "min": 3,
+            "countBy": "meals",
+            "scope": "main_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": false
+          },
+          {
+            "id": "cheese",
+            "label": "Cheese at most 2 times a week",
+            "subject": {
+              "subgroups": [
+                "cheese_fresh",
+                "cheese_aged"
+              ]
+            },
+            "per": "week",
+            "max": 2,
+            "countBy": "meals",
+            "scope": "main_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": true
+          },
+          {
+            "id": "eggs",
+            "label": "Whole eggs: 2 to 4 a week",
+            "subject": {
+              "foodIds": [
+                "uova"
+              ]
+            },
+            "per": "week",
+            "min": 2,
+            "max": 4,
+            "countBy": "units",
+            "scope": "all_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": false
+          },
+          {
+            "id": "red_meat",
+            "label": "Red meat at most twice a week",
+            "subject": {
+              "subgroups": [
+                "meat_red"
+              ]
+            },
+            "per": "week",
+            "max": 2,
+            "countBy": "meals",
+            "scope": "main_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": false
+          },
+          {
+            "id": "white_meat",
+            "label": "White meat at most 3 times a week",
+            "subject": {
+              "subgroups": [
+                "meat_white"
+              ]
+            },
+            "per": "week",
+            "max": 3,
+            "countBy": "meals",
+            "scope": "main_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": false
+          },
+          {
+            "id": "tubers",
+            "label": "Potatoes or gnocchi 1 to 2 times a week",
+            "subject": {
+              "subgroups": [
+                "tuber",
+                "fresh_pasta"
+              ]
+            },
+            "per": "week",
+            "max": 2,
+            "countBy": "meals",
+            "scope": "main_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": false
+          },
+          {
+            "id": "cured",
+            "label": "Cured meats occasionally",
+            "subject": {
+              "subgroups": [
+                "cured"
+              ]
+            },
+            "per": "week",
+            "max": 3,
+            "countBy": "meals",
+            "scope": "main_meals",
+            "garnishExempt": true,
+            "source": "plan",
+            "review": true
+          }
+        ]
+      },
+      "templates": [
+        {
+          "n": 1,
+          "hint": "Rice with chickpeas and courgettes",
+          "weekendStyle": false,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d1-pranzo-cereal",
+                "role": "cereal",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "riso_basmati",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "riso_rosso",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "cereal",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    },
+                    "label": "any cereal"
+                  }
+                ]
+              },
+              {
+                "id": "d1-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_canned",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    },
+                    "label": "canned legumes"
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_dry",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    },
+                    "label": "dried legumes"
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "tofu",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d1-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "slots": [
+              {
+                "id": "d1-cena-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "uova",
+                    "qty": {
+                      "kind": "count",
+                      "count": 2,
+                      "unitG": 60
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d1-cena-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              },
+              {
+                "id": "d1-cena-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 45
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "cracker_magretti",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "n": 2,
+          "weekendStyle": false,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d2-pranzo-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "mais_scatola",
+                    "qty": {
+                      "kind": "g",
+                      "g": 140
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d2-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "mozzarella",
+                    "qty": {
+                      "kind": "g",
+                      "g": 125
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "ricotta",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "primosale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d2-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "slots": [
+              {
+                "id": "d2-cena-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "vitello_filetto",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "vitellone_magro",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "burger_vegetale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 100
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d2-cena-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              },
+              {
+                "id": "d2-cena-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 45
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "cracker_magretti",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "patate",
+                    "qty": {
+                      "kind": "g",
+                      "g": 150
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "n": 3,
+          "hint": "Pasta with lentil sauce",
+          "weekendStyle": false,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d3-pranzo-cereal",
+                "role": "cereal",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pasta_kamut",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "orzo_perlato",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "farro",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "cereal",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    },
+                    "label": "any cereal"
+                  }
+                ]
+              },
+              {
+                "id": "d3-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_canned",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    },
+                    "label": "canned legumes"
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_dry",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    },
+                    "label": "dried legumes"
+                  }
+                ]
+              },
+              {
+                "id": "d3-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "slots": [
+              {
+                "id": "d3-cena-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "petto_pollo",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "tacchino_petto",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d3-cena-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              },
+              {
+                "id": "d3-cena-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 45
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "cracker_magretti",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "n": 4,
+          "weekendStyle": false,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d4-pranzo-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "mais_scatola",
+                    "qty": {
+                      "kind": "g",
+                      "g": 140
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d4-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "bresaola",
+                    "qty": {
+                      "kind": "g",
+                      "g": 80
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "arrosto_pollo_affettato",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d4-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "slots": [
+              {
+                "id": "d4-cena-soup",
+                "role": "soup",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "minestrone_orogel",
+                    "qty": {
+                      "kind": "g",
+                      "g": 300
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "verduri_orogel",
+                    "qty": {
+                      "kind": "g",
+                      "g": 300
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d4-cena-topping",
+                "role": "topping",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "parmigiano",
+                    "qty": {
+                      "kind": "g",
+                      "g": 5
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d4-cena-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_canned",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    },
+                    "label": "canned legumes"
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_dry",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    },
+                    "label": "dried legumes"
+                  }
+                ]
+              },
+              {
+                "id": "d4-cena-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_comune",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "orzo_perlato",
+                    "qty": {
+                      "kind": "g",
+                      "g": 25
+                    }
+                  }
+                ]
+              }
+            ],
+            "note": "Vegetable soup night: soup, a teaspoon of grated cheese, the protein, a little bread or barley."
+          }
+        },
+        {
+          "n": 5,
+          "hint": "Couscous with chickpeas and cherry tomatoes",
+          "weekendStyle": false,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d5-pranzo-cereal",
+                "role": "cereal",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "cous_cous",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "quinoa",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "cereal",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    },
+                    "label": "any cereal"
+                  }
+                ]
+              },
+              {
+                "id": "d5-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_canned",
+                    "qty": {
+                      "kind": "g",
+                      "g": 110
+                    },
+                    "label": "canned legumes"
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "legume_dry",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    },
+                    "label": "dried legumes"
+                  }
+                ]
+              },
+              {
+                "id": "d5-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "slots": [
+              {
+                "id": "d5-cena-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pollo_coscia",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "coniglio",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d5-cena-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              },
+              {
+                "id": "d5-cena-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 45
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "cracker_magretti",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "patate",
+                    "qty": {
+                      "kind": "g",
+                      "g": 150
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "n": 6,
+          "weekendStyle": true,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d6-pranzo-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_integrale",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "cracker_magretti",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d6-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "prosciutto_cotto",
+                    "qty": {
+                      "kind": "g",
+                      "g": 80
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "prosciutto_crudo",
+                    "qty": {
+                      "kind": "g",
+                      "g": 80
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d6-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "libero": true
+          }
+        },
+        {
+          "n": 7,
+          "hint": "Pasta or gnocchi with sauce plus a meat course with vegetables",
+          "weekendStyle": true,
+          "pranzo": {
+            "slots": [
+              {
+                "id": "d7-pranzo-cereal",
+                "role": "cereal",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pasta_kamut",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "gnocchi_patate",
+                    "qty": {
+                      "kind": "g",
+                      "g": 160
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "pasta_uovo_fresca",
+                    "qty": {
+                      "kind": "g",
+                      "g": 80
+                    }
+                  },
+                  {
+                    "kind": "subgroup",
+                    "subgroup": "cereal",
+                    "qty": {
+                      "kind": "g",
+                      "g": 70
+                    },
+                    "label": "any cereal"
+                  }
+                ]
+              },
+              {
+                "id": "d7-pranzo-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "vitellone_magro",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "roast_beef",
+                    "qty": {
+                      "kind": "g",
+                      "g": 130
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d7-pranzo-veg",
+                "role": "veg",
+                "options": [
+                  {
+                    "kind": "free"
+                  }
+                ]
+              }
+            ]
+          },
+          "cena": {
+            "slots": [
+              {
+                "id": "d7-cena-soup",
+                "role": "soup",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "minestrone_orogel",
+                    "qty": {
+                      "kind": "g",
+                      "g": 300
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "verduri_orogel",
+                    "qty": {
+                      "kind": "g",
+                      "g": 300
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d7-cena-topping",
+                "role": "topping",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "parmigiano",
+                    "qty": {
+                      "kind": "g",
+                      "g": 5
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d7-cena-protein",
+                "role": "protein",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "fiocchi_di_latte",
+                    "qty": {
+                      "kind": "g",
+                      "g": 180
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "feta_light",
+                    "qty": {
+                      "kind": "g",
+                      "g": 90
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "d7-cena-bread",
+                "role": "bread",
+                "options": [
+                  {
+                    "kind": "food",
+                    "foodId": "pane_comune",
+                    "qty": {
+                      "kind": "g",
+                      "g": 35
+                    }
+                  },
+                  {
+                    "kind": "food",
+                    "foodId": "orzo_perlato",
+                    "qty": {
+                      "kind": "g",
+                      "g": 25
+                    }
+                  }
+                ]
+              }
+            ],
+            "note": "Vegetable soup night: soup, a teaspoon of grated cheese, the protein, a little bread or barley."
+          }
+        }
+      ],
+      "fixedMenus": {
+        "colazione": [
+          {
+            "id": "b1",
+            "label": "Greek yogurt, granola, nuts, honey",
+            "items": [
+              {
+                "foodId": "yogurt_greco",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                }
+              },
+              {
+                "foodId": "granola",
+                "qty": {
+                  "kind": "g",
+                  "g": 30
+                }
+              },
+              {
+                "foodId": "noci",
+                "qty": {
+                  "kind": "g",
+                  "g": 10
+                }
+              },
+              {
+                "foodId": "miele",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 7
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "b2",
+            "label": "Greek yogurt, biscuits, dark chocolate, honey",
+            "items": [
+              {
+                "foodId": "yogurt_greco",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                }
+              },
+              {
+                "foodId": "biscotti_oro_saiwa",
+                "qty": {
+                  "kind": "count",
+                  "count": 4,
+                  "unitG": 7
+                }
+              },
+              {
+                "foodId": "cioccolato_fondente",
+                "qty": {
+                  "kind": "g",
+                  "g": 10
+                }
+              },
+              {
+                "foodId": "miele",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 7
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "b3",
+            "label": "Greek yogurt, oats, peanut butter, honey",
+            "items": [
+              {
+                "foodId": "yogurt_greco",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                }
+              },
+              {
+                "foodId": "fiocchi_avena",
+                "qty": {
+                  "kind": "g",
+                  "g": 25
+                }
+              },
+              {
+                "foodId": "burro_arachidi",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 8
+                }
+              },
+              {
+                "foodId": "miele",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 7
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "b4",
+            "label": "Toast with avocado and a scrambled egg",
+            "items": [
+              {
+                "foodId": "pan_bauletto",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 28
+                }
+              },
+              {
+                "foodId": "avocado",
+                "qty": {
+                  "kind": "g",
+                  "g": 30
+                }
+              },
+              {
+                "foodId": "uova",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 60
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "b5",
+            "label": "Toast with ricotta, cinnamon, honey and walnuts",
+            "items": [
+              {
+                "foodId": "pan_bauletto",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 28
+                }
+              },
+              {
+                "foodId": "ricotta",
+                "qty": {
+                  "kind": "g",
+                  "g": 40
+                }
+              },
+              {
+                "foodId": "miele",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 7
+                }
+              },
+              {
+                "foodId": "noci",
+                "qty": {
+                  "kind": "g",
+                  "g": 10
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "b6",
+            "label": "Post-workout: Greek yogurt, honey, banana, dark chocolate",
+            "items": [
+              {
+                "foodId": "yogurt_greco",
+                "qty": {
+                  "kind": "g",
+                  "g": 150
+                }
+              },
+              {
+                "foodId": "miele",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 7
+                }
+              },
+              {
+                "foodId": "banana",
+                "qty": {
+                  "kind": "count",
+                  "count": 1,
+                  "unitG": 120
+                }
+              },
+              {
+                "foodId": "cioccolato_fondente",
+                "qty": {
+                  "kind": "g",
+                  "g": 20
+                }
+              }
+            ],
+            "when": "post_workout"
+          }
+        ],
+        "spuntino": {
+          "tiers": [
+            {
+              "qty": {
+                "kind": "g",
+                "g": 150
+              },
+              "foodIds": [
+                "mela",
+                "pera",
+                "arancia",
+                "clementine",
+                "kiwi",
+                "ananas",
+                "melograno",
+                "prugne",
+                "ciliegie"
+              ]
+            },
+            {
+              "qty": {
+                "kind": "g",
+                "g": 200
+              },
+              "foodIds": [
+                "fragole",
+                "mirtilli",
+                "pesca",
+                "albicocche",
+                "melone",
+                "pompelmo"
+              ]
+            },
+            {
+              "qty": {
+                "kind": "g",
+                "g": 300
+              },
+              "foodIds": [
+                "anguria"
+              ]
+            }
+          ],
+          "weekdaysOnly": true,
+          "optional": false
+        },
+        "merenda": [
+          {
+            "id": "m1",
+            "label": "Low-fat yogurt",
+            "items": [
+              {
+                "foodId": "yogurt_magro",
+                "qty": {
+                  "kind": "g",
+                  "g": 125
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "m2",
+            "label": "Parmesan snack",
+            "items": [
+              {
+                "foodId": "parmareggio_snack",
+                "qty": {
+                  "kind": "g",
+                  "g": 20
+                }
+              }
+            ],
+            "when": "always"
+          },
+          {
+            "id": "m3",
+            "label": "Plain kefir",
+            "items": [
+              {
+                "foodId": "kefir",
+                "qty": {
+                  "kind": "ml",
+                  "ml": 150
+                }
+              }
+            ],
+            "when": "always"
+          }
+        ],
+        "spuntinoSerale": {
+          "tiers": [
+            {
+              "qty": {
+                "kind": "g",
+                "g": 150
+              },
+              "foodIds": [
+                "mela",
+                "pera",
+                "arancia",
+                "kiwi"
+              ]
+            },
+            {
+              "qty": {
+                "kind": "g",
+                "g": 200
+              },
+              "foodIds": [
+                "fragole",
+                "mirtilli",
+                "pesca"
+              ]
+            }
+          ],
+          "weekdaysOnly": false,
+          "optional": true
+        }
+      },
+      "rules": {
+        "weightsRaw": true,
+        "oilFoodId": "olio_evo",
+        "oilPerDayG": 24,
+        "oilPerMealG": 12,
+        "pairingLocked": true,
+        "cerealInterchangeable": true,
+        "pastoLibero": {
+          "perWeek": 1,
+          "defaultTemplate": 6
+        },
+        "morningSnack": "weekdays_only",
+        "methods": [
+          "padella",
+          "forno",
+          "vapore",
+          "bollitura",
+          "cartoccio",
+          "friggitrice ad aria"
+        ],
+        "condiments": [
+          "olio_evo",
+          "salsa_pomodoro",
+          "passata",
+          "pelati",
+          "erbe",
+          "spezie",
+          "aceto",
+          "brodo_vegetale",
+          "limone",
+          "vino_bianco",
+          "aglio",
+          "cipolla",
+          "basilico",
+          "prezzemolo",
+          "rosmarino",
+          "peperoncino",
+          "sale",
+          "pepe",
+          "zenzero",
+          "curry",
+          "paprika",
+          "cumino",
+          "origano",
+          "salvia",
+          "menta",
+          "cannella"
+        ],
+        "gratedCheeseMaxTsp": 2,
+        "veg": {
+          "requiredAt": [
+            "pranzo",
+            "cena"
+          ],
+          "limitSubgroups": [
+            "veg_sugary"
+          ],
+          "notVeg": [
+            "tuber",
+            "legume_canned",
+            "legume_dry"
+          ]
+        }
+      },
+      "sourceDifferences": []
+    }
+  ],
+  "activeRevision": 1
+}

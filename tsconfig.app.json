@@ -20,5 +20,5 @@
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] }
   },
-  "include": ["src", "plans/*.json", "scripts", "vitest.setup.ts"]
+  "include": ["src", "plans/*.json", "vitest.setup.ts"]
 }
