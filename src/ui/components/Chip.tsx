@@ -1,6 +1,22 @@
 import { clsx } from 'clsx';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
+type Tone = 'neutral' | 'olive' | 'terra' | 'ok' | 'warn';
+
+/** What a static chip keeps of the props it was given; button-only attributes (type, disabled, form…) are dropped. */
+const STATIC_ATTRS = new Set(['id', 'title', 'style', 'lang', 'dir', 'role', 'tabIndex', 'hidden']);
+
+function staticAttrs(rest: Record<string, unknown>): HTMLAttributes<HTMLSpanElement> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(rest))
+    if (STATIC_ATTRS.has(k) || k.startsWith('aria-') || k.startsWith('data-')) out[k] = v;
+  return out as HTMLAttributes<HTMLSpanElement>;
+}
+
+/**
+ * A pill. With `onClick` it is a button whose pressed state follows `selected`; without one it is plain
+ * text in a <span>, so nothing announces a button that does nothing.
+ */
 export function Chip({
   selected,
   className,
@@ -9,28 +25,31 @@ export function Chip({
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   selected?: boolean;
-  tone?: 'neutral' | 'olive' | 'terra' | 'ok' | 'warn';
+  tone?: Tone;
   children: ReactNode;
 }) {
   const interactive = !!rest.onClick;
+  const cls = clsx(
+    'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition',
+    interactive ? 'tap active:scale-[0.98]' : 'cursor-default',
+    selected
+      ? 'border-olive bg-olive text-on-olive'
+      : tone === 'neutral' && 'border-line bg-surface text-ink-2',
+    !selected && tone === 'olive' && 'border-olive/30 bg-olive-soft text-olive-2',
+    !selected && tone === 'terra' && 'border-terra/30 bg-terra-soft text-terra',
+    !selected && tone === 'ok' && 'border-ok/30 bg-ok-soft text-ok',
+    !selected && tone === 'warn' && 'border-warn/30 bg-warn-soft text-warn',
+    className,
+  );
+  if (!interactive) {
+    return (
+      <span className={cls} {...staticAttrs(rest as Record<string, unknown>)}>
+        {children}
+      </span>
+    );
+  }
   return (
-    <button
-      type="button"
-      className={clsx(
-        'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition',
-        interactive ? 'tap active:scale-[0.98]' : 'cursor-default',
-        selected
-          ? 'border-olive bg-olive text-white'
-          : tone === 'neutral' && 'border-line bg-surface text-ink-2',
-        !selected && tone === 'olive' && 'border-olive/30 bg-olive-soft text-olive-2',
-        !selected && tone === 'terra' && 'border-terra/30 bg-terra-soft text-terra',
-        !selected && tone === 'ok' && 'border-ok/30 bg-ok-soft text-ok',
-        !selected && tone === 'warn' && 'border-warn/30 bg-warn-soft text-warn',
-        className,
-      )}
-      aria-pressed={interactive ? selected : undefined}
-      {...rest}
-    >
+    <button type="button" className={cls} aria-pressed={selected} {...rest}>
       {children}
     </button>
   );
@@ -42,7 +61,7 @@ export function Badge({
   className,
 }: {
   children: ReactNode;
-  tone?: 'neutral' | 'olive' | 'terra' | 'ok' | 'warn';
+  tone?: Tone;
   className?: string;
 }) {
   return (

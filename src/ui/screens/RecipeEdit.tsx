@@ -13,15 +13,16 @@ import {
   type PotPolicy,
   type Subgroup,
 } from '@/core/model';
-import { validateDish } from '@/core/validate';
+import { validateDish, type Verdict } from '@/core/validate';
 import { useHousehold } from '@/store/store';
 import { actions } from '@/store/actions';
 import { ctxOf } from '@/store/selectors';
-import { t } from '@/i18n/en';
+import { methodLabel, t } from '@/i18n/en';
 import { Button } from '../components/Button';
 import { Card, SectionTitle } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { EmptyState, useToast } from '../components/Feedback';
+import { Sheet } from '../components/Sheet';
 import { prettyVerdictText, VerdictCard } from '../components/Verdict';
 import { POT_HINT } from '../meal-view';
 
@@ -217,10 +218,14 @@ export function RecipeEditScreen() {
   const base = id ? ctx.dishes.get(id) : undefined;
   const [draft, setDraft] = useState<Draft>(() => (base ? draftOf(base) : emptyDraft()));
   const [touched, setTouched] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const preview = useMemo(() => dishOf(draft, base, base?.id ?? 'draft'), [draft, base]);
   const verdict = useMemo(() => validateDish(preview, ctx.rev, ctx.foods), [preview, ctx]);
   const problems = useMemo(() => validateDraft(draft, preview), [draft, preview]);
+  // What the form opened with; Back and Cancel ask before throwing away anything that differs from it.
+  const initial = useMemo(() => (base ? draftOf(base) : emptyDraft()), [base]);
+  const dirty = !sameDraft(draft, initial);
 
   if (id && !base) {
     return (
@@ -244,8 +249,9 @@ export function RecipeEditScreen() {
   const toggleIn = (list: string[], v: string) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
-  const cancel = () =>
+  const leave = () =>
     base ? navigate({ to: '/recipes/$id', params: { id: base.id } }) : navigate({ to: '/recipes' });
+  const cancel = () => (dirty ? setConfirmLeave(true) : leave());
 
   const save = () => {
     setTouched(true);
@@ -264,7 +270,7 @@ export function RecipeEditScreen() {
     if (complete) toast(`Saved. ${prettyVerdictText(verdict.summary)}`, 'ok');
     else
       toast(
-        `Saved as a draft: the plan cannot place it yet. ${verdict.questions.length ? 'A question for the nutritionist was added.' : 'Fix the slots and save again.'}`,
+        `${t.recipes.savedDraft}: ${draftReason}. ${verdict.questions.length ? t.recipes.draftQuestionAdded : t.recipes.fixAndSave}`,
         'info',
       );
     navigate({ to: '/recipes/$id', params: { id: dish.id } });
@@ -274,6 +280,8 @@ export function RecipeEditScreen() {
     .split('\n')
     .map((line, i) => ({ i, m: GRAMS_IN_TEXT.exec(line) }))
     .filter((x): x is { i: number; m: RegExpExecArray } => x.m !== null);
+  // One sentence that agrees with the verdict card: null when the dish saves as approved.
+  const draftReason = verdict.best?.complete ? null : reasonForDraft(verdict, gramLines);
   const freeVegFoods = ctx.foods.filter((f) => f.isFreeVeg);
   const condimentFoods = ctx.rev.rules.condiments
     .map((c) => ctx.foodMap.get(c))
@@ -540,7 +548,7 @@ export function RecipeEditScreen() {
                 selected={draft.methods.includes(m)}
                 onClick={() => patch({ methods: toggleIn(draft.methods, m) })}
               >
-                {m}
+                {methodLabel(m)}
               </Chip>
             ))}
           </div>
@@ -624,9 +632,7 @@ export function RecipeEditScreen() {
           label="Live verdict"
         />
         <p className="mt-2 px-1 text-sm text-muted">
-          {verdict.best?.complete
-            ? 'Saves as approved: it can enter a planned week.'
-            : 'Saves as a draft until every slot of a plan meal is filled.'}
+          {draftReason === null ? t.recipes.savesApproved : `${t.recipes.savesDraft}: ${draftReason}.`}
         </p>
       </div>
 
@@ -638,8 +644,78 @@ export function RecipeEditScreen() {
           {t.recipes.cancel}
         </Button>
       </div>
+
+      <Sheet open={confirmLeave} onClose={() => setConfirmLeave(false)} title={t.recipes.discardTitle}>
+        <p className="mb-4 text-ink-2">{base ? t.recipes.discardBody : t.recipes.discardBodyNew}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="danger"
+            onClick={() => {
+              setConfirmLeave(false);
+              leave();
+            }}
+          >
+            {t.recipes.discard}
+          </Button>
+          <Button variant="ghost" onClick={() => setConfirmLeave(false)}>
+            {t.recipes.keepEditing}
+          </Button>
+        </div>
+      </Sheet>
     </div>
   );
+}
+
+/** Both drafts come from emptyDraft()/draftOf() and are only ever patched, so their key order matches. */
+function sameDraft(a: Draft, b: Draft): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function fill(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? '');
+}
+
+/** "grain", "grain and protein", "grain, bread and protein". */
+function listWords(words: string[]): string {
+  if (words.length <= 1) return words.join('');
+  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+}
+
+function lowerFirst(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+/**
+ * Why the dish would save as a draft, read from the verdict's blocking issues so the hint, the save toast
+ * and the verdict card never disagree: unfilled slots, grams in a step, a foreign food, a method or
+ * condiment the plan does not allow, or a food that only the older exchange list accepts.
+ */
+function reasonForDraft(verdict: Verdict, gramLines: { i: number; m: RegExpExecArray }[]): string {
+  const r = t.recipes.draftReasons;
+  const best = verdict.best;
+  if (!best) return r.noFit;
+  const parts: string[] = [];
+  const errors = best.issues.filter((i) => i.level === 'error');
+  if (best.unfilled.length > 0) {
+    const roles = best.unfilled.map((s) => t.roles[s.role].toLowerCase());
+    parts.push(fill(roles.length === 1 ? r.unfilledOne : r.unfilledMany, { roles: listWords(roles) }));
+  }
+  if (errors.some((i) => i.code === 'grams_in_steps')) {
+    if (gramLines.length > 0)
+      for (const { i, m } of gramLines) parts.push(fill(r.gramsInStep, { n: String(i + 1), text: m[0] }));
+    else parts.push(r.oilInSteps);
+  }
+  for (const issue of errors) {
+    if (issue.code === 'unfilled' || issue.code === 'grams_in_steps') continue;
+    // Core messages read "protein: Salmon has no place…" and "… (allowed: padella, forno)"; keep the gist.
+    const text = (issue.code === 'foreign' ? issue.message.replace(/^\w+:\s*/, '') : issue.message).replace(
+      /\s*\(allowed:[^)]*\)/,
+      '',
+    );
+    parts.push(lowerFirst(prettyVerdictText(text)));
+  }
+  if (best.exchangeFallbacks.length > 0) parts.push(r.exchangeOnly);
+  return [...new Set(parts)].join('; ') || r.fallback;
 }
 
 function validateDraft(draft: Draft, preview: Dish): string[] {

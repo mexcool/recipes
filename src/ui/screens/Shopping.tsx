@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { clsx } from 'clsx';
 import { CalendarDays, Check, ChevronDown, Copy, Plus, Share2, WifiOff, X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
@@ -11,7 +10,7 @@ import { useNow } from '@/store/now';
 import { actions } from '@/store/actions';
 import { ctxOf, currentWeek, shoppingFor, type Ctx } from '@/store/selectors';
 import { t } from '@/i18n/en';
-import { Button } from '../components/Button';
+import { Button, ButtonLink } from '../components/Button';
 import { Badge, Chip } from '../components/Chip';
 import { EmptyState, useOnline, useToast } from '../components/Feedback';
 
@@ -54,17 +53,16 @@ function buyText(item: ShoppingItem, food: Food | undefined): string {
     return `${item.toBuyG} g`;
   }
   if (item.haveIt) return 'already have';
-  // Bought: reconstruct the packs from what the check recorded.
+  return boughtText(item.purchasedCoveredG, food);
+}
+
+/** "bought · 2 × lattina 400 g": the packs a check recorded, or the grams when they do not divide into packs. */
+function boughtText(coveredG: number, food: Food | undefined): string {
   const unit = food?.purchaseUnits[0];
-  if (
-    unit &&
-    !unit.label.startsWith('al banco') &&
-    item.purchasedCoveredG > 0 &&
-    item.purchasedCoveredG % unit.usableG === 0
-  ) {
-    return `${t.shopping.bought} · ${packText(item.purchasedCoveredG / unit.usableG, unit.label)}`;
+  if (unit && !unit.label.startsWith('al banco') && coveredG > 0 && coveredG % unit.usableG === 0) {
+    return `${t.shopping.bought} · ${packText(coveredG / unit.usableG, unit.label)}`;
   }
-  return `${t.shopping.bought} · ${item.purchasedCoveredG} g`;
+  return `${t.shopping.bought} · ${Math.round(coveredG)} g`;
 }
 
 function weekLabel(monday: string): string {
@@ -130,11 +128,9 @@ export function ShoppingScreen() {
               : 'Stasera drafts the week, then turns it into packs in the order you walk the store.'
           }
           action={
-            <Link to="/week" className="contents">
-              <Button variant="primary" size="lg" icon={<CalendarDays size={18} />}>
-                {t.week.title}
-              </Button>
-            </Link>
+            <ButtonLink to="/week" variant="primary" size="lg" icon={<CalendarDays size={18} />}>
+              {t.week.title}
+            </ButtonLink>
           }
         />
       </div>
@@ -175,6 +171,10 @@ export function ShoppingScreen() {
   const pendingManual = list.manual.filter((m) => !m.checked);
   const cartManual = list.manual.filter((m) => m.checked);
   const staples = [...list.staplesUsed, ...list.items.filter((i) => i.staple).map((i) => i.foodId)];
+  // Ticked before a regenerate (or a pantry edit) removed the line: the pack was bought, nothing needs it now.
+  const stillBought = Object.entries(h.purchases[week.id] ?? {})
+    .filter(([key, p]) => p.coveredG > 0 && !list.items.some((i) => i.key === key))
+    .map(([key, p]) => ({ key, coveredG: p.coveredG }));
 
   const rowProps = { ctx, openKey, setOpenKey, onToggle: toggleItem };
 
@@ -265,7 +265,7 @@ export function ShoppingScreen() {
 
       {staples.length > 0 && <StaplesCard ctx={ctx} foodIds={staples} />}
 
-      {(cartItems.length > 0 || cartManual.length > 0) && (
+      {(cartItems.length > 0 || cartManual.length > 0 || stillBought.length > 0) && (
         <SectionCard title={t.shopping.inCart} subtitle="Nel carrello">
           <ul>
             {cartItems.map((item) => (
@@ -273,6 +273,9 @@ export function ShoppingScreen() {
             ))}
             {cartManual.map((m) => (
               <ManualRow key={m.id} item={m} weekId={week.id} />
+            ))}
+            {stillBought.map((p) => (
+              <BoughtUnneededRow key={p.key} ctx={ctx} foodId={p.key} coveredG={p.coveredG} />
             ))}
           </ul>
         </SectionCard>
@@ -355,7 +358,7 @@ function Row({
             aria-hidden="true"
             className={clsx(
               'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition',
-              done ? 'border-olive bg-olive text-white' : 'border-line bg-surface',
+              done ? 'border-olive bg-olive text-on-olive' : 'border-line bg-surface',
             )}
           >
             {done && <Check size={14} strokeWidth={3} />}
@@ -534,7 +537,7 @@ function ManualRow({ item, weekId }: { item: ManualItem; weekId: string }) {
             aria-hidden="true"
             className={clsx(
               'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition',
-              item.checked ? 'border-olive bg-olive text-white' : 'border-line bg-surface',
+              item.checked ? 'border-olive bg-olive text-on-olive' : 'border-line bg-surface',
             )}
           >
             {item.checked && <Check size={14} strokeWidth={3} />}
@@ -556,6 +559,36 @@ function ManualRow({ item, weekId }: { item: ManualItem; weekId: string }) {
         >
           <X size={18} />
         </button>
+      </div>
+    </li>
+  );
+}
+
+/** A purchase the week no longer asks for: it stays visible so the bought pack is not forgotten. */
+function BoughtUnneededRow({ ctx, foodId, coveredG }: { ctx: Ctx; foodId: string; coveredG: number }) {
+  const food = ctx.foodMap.get(foodId);
+  const nameIt = food?.nameIt ?? foodId;
+  const nameEn = food?.nameEn;
+  return (
+    <li className="border-b border-line last:border-b-0">
+      <div className="flex items-center gap-3 py-2.5 pl-1">
+        <span
+          aria-hidden="true"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface-2 text-muted"
+        >
+          <Check size={14} strokeWidth={3} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block leading-snug line-through decoration-muted/70">
+            <span className="font-semibold text-muted">{nameIt}</span>
+            {nameEn && nameEn.toLowerCase() !== nameIt.toLowerCase() && (
+              <span className="text-muted"> {nameEn}</span>
+            )}
+          </span>
+          <span className="mt-0.5 block text-sm text-muted tabular-nums">
+            {boughtText(coveredG, food)} · {t.shopping.noLongerNeeded}
+          </span>
+        </span>
       </div>
     </li>
   );

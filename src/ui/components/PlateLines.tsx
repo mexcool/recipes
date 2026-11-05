@@ -28,7 +28,7 @@ export function PlateLines({
               {f && f.nameIt !== f.nameEn && <span className="text-muted"> · {f.nameIt}</span>}
               {l.role === 'oil' && <span className="text-muted"> ({t.tonight.oilAllowance})</span>}
             </span>
-            <span className="shrink-0 font-medium tabular-nums">
+            <span className="shrink-0 text-right font-medium whitespace-nowrap tabular-nums">
               {l.display}
               {l.cookedG && (
                 <span className="text-muted">
@@ -44,41 +44,47 @@ export function PlateLines({
   );
 }
 
+/**
+ * One row per pot line: the ingredient, each person's raw weight, and the pot total. Amounts never wrap
+ * ("300 g" stays on one line at 360 px); a cooked equivalent sits under its raw weight.
+ */
 export function PlatesTable({ plates, ctx }: { plates: Plates; ctx: Ctx }) {
   const members = plates.members;
   return (
     <table className="w-full text-sm">
       <thead>
         <tr className="text-left text-xs uppercase tracking-wide text-muted">
-          <th className="py-1 pr-2 font-medium">Ingredient</th>
+          <th className="w-full py-1 pr-2 font-medium">{t.tonight.ingredient}</th>
           {members.map((m) => (
-            <th key={m.memberId} className="py-1 pr-2 text-right font-medium">
+            <th key={m.memberId} className="py-1 pr-2 text-right font-medium whitespace-nowrap">
               {ctx.h.members.find((x) => x.id === m.memberId)?.name ?? m.memberId}
             </th>
           ))}
-          <th className="py-1 text-right font-medium">{t.tonight.pot}</th>
+          <th className="py-1 text-right font-medium">{t.tonight.potColumn}</th>
         </tr>
       </thead>
       <tbody>
         {plates.pot.map((p) => (
           <tr key={`${p.foodId}-${p.role}`} className="border-t border-line">
-            <td className="py-1.5 pr-2 text-ink-2">
+            <td className="w-full py-1.5 pr-2 text-ink-2">
               {ctx.foodMap.get(p.foodId)?.nameEn ?? p.foodId}
               {p.role === 'oil' && <span className="text-muted"> (oil)</span>}
             </td>
             {members.map((m) => {
               const line = m.lines.find((l) => l.foodId === p.foodId && l.role === p.role);
               return (
-                <td key={m.memberId} className="py-1.5 pr-2 text-right tabular-nums">
+                <td
+                  key={m.memberId}
+                  className="py-1.5 pr-2 text-right align-top whitespace-nowrap tabular-nums"
+                >
                   {line?.display ?? '—'}
                 </td>
               );
             })}
-            <td className="py-1.5 text-right font-medium tabular-nums">
+            <td className="py-1.5 text-right align-top font-medium whitespace-nowrap tabular-nums">
               {p.grams} g
               {p.cookedG ? (
-                <span className="text-muted">
-                  {' '}
+                <span className="block text-xs font-normal text-muted">
                   ≈ {p.cookedG} g {t.common.cooked}
                 </span>
               ) : null}

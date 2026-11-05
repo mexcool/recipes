@@ -40,6 +40,8 @@ export const en = {
     partner: 'Partner',
     plates: 'Plates',
     pot: 'Cook together',
+    potColumn: 'Pot',
+    ingredient: 'Ingredient',
     breakfast: 'Breakfast today',
     snacks: 'Snacks today',
     noSnack: 'No morning snack at the weekend.',
@@ -91,6 +93,7 @@ export const en = {
     runningLow: 'Running low',
     pantry: 'From the pantry',
     bought: 'bought',
+    noLongerNeeded: 'no longer needed',
   },
   recipes: {
     title: 'Recipes',
@@ -121,6 +124,27 @@ export const en = {
     askNutritionist: 'Ask the nutritionist',
     questionAdded: 'Added to your questions',
     noFit: 'No template meal has these slots.',
+    origin: { seed: 'Built in', user: 'Yours', llm: 'Suggested', import: 'Imported' },
+    savesApproved: 'Saves as approved: it can enter a planned week.',
+    savesDraft: 'Saves as a draft',
+    savedDraft: 'Saved as a draft',
+    fixAndSave: 'Fix that and save again.',
+    draftQuestionAdded: 'A question for the nutritionist was added.',
+    /** Why a dish saves as a draft; {roles}, {n} and {text} are filled in by the editor. */
+    draftReasons: {
+      noFit: 'no plan meal has these slots',
+      unfilledOne: 'the {roles} slot is unfilled',
+      unfilledMany: 'the {roles} slots are unfilled',
+      gramsInStep: 'step {n} mentions “{text}”',
+      oilInSteps: 'the steps add oil by the spoon',
+      exchangeOnly: 'a food is only on the older exchange list — ask the nutritionist',
+      fallback: 'the plan cannot place it yet',
+    },
+    discardTitle: 'Discard changes?',
+    discardBody: 'Your edits to this dish have not been saved.',
+    discardBodyNew: 'This new dish has not been saved yet.',
+    discard: 'Discard',
+    keepEditing: 'Keep editing',
   },
   settings: {
     title: 'Settings',
@@ -152,6 +176,22 @@ export const en = {
     multiplier: 'Portion multiplier',
     name: 'Name',
     amounts: 'Amounts by day',
+    /** Where a weekly rule comes from (FrequencyRule.source). */
+    ruleSource: {
+      plan: 'From the plan',
+      exchange: 'Exchange list',
+      nutritionist: 'Nutritionist',
+      user: 'Yours',
+    },
+  },
+  /** Plan cooking-method ids (Italian, as on the sheet) in English. */
+  methods: {
+    padella: 'pan',
+    forno: 'oven',
+    vapore: 'steamed',
+    bollitura: 'boiled',
+    cartoccio: 'foil parcel',
+    'friggitrice ad aria': 'air fryer',
   },
   common: {
     close: 'Close',
@@ -178,3 +218,13 @@ export const en = {
 
 export type Strings = typeof en;
 export const t = en;
+
+/** Readable name for a plan cooking-method id; an id the catalogue does not know is shown as written. */
+export function methodLabel(id: string): string {
+  return (en.methods as Record<string, string>)[id] ?? id;
+}
+
+/** Readable name for a weekly rule's source id. */
+export function ruleSourceLabel(id: string): string {
+  return (en.settings.ruleSource as Record<string, string>)[id] ?? id.replace(/_/g, ' ');
+}

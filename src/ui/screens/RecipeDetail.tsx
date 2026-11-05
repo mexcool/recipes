@@ -7,7 +7,7 @@ import { dishTitles } from '@/core/title';
 import { useHousehold } from '@/store/store';
 import { actions } from '@/store/actions';
 import { ctxOf, type Ctx } from '@/store/selectors';
-import { t } from '@/i18n/en';
+import { methodLabel, t } from '@/i18n/en';
 import { Button } from '../components/Button';
 import { Card, SectionTitle } from '../components/Card';
 import { Badge, Chip } from '../components/Chip';
@@ -79,7 +79,7 @@ export function RecipeDetailScreen() {
           {dish.status === 'draft' && <Badge>{t.recipes.draft}</Badge>}
           {dish.status === 'proposed' && <Badge tone="warn">{t.recipes.proposed}</Badge>}
           {dish.tags.includes('favourite') && <Badge tone="olive">{t.recipes.favourites}</Badge>}
-          {dish.origin !== 'seed' && <Badge>{dish.origin === 'user' ? 'Yours' : dish.origin}</Badge>}
+          {dish.origin !== 'seed' && <Badge>{t.recipes.origin[dish.origin]}</Badge>}
           <TasteMark taste={taste} />
         </div>
         <h1 className="text-3xl leading-tight font-semibold">{titles.en}</h1>
@@ -141,7 +141,7 @@ export function RecipeDetailScreen() {
           {dish.methods.length > 0 && (
             <div className="border-t border-line pt-3">
               <p className="text-xs font-medium tracking-wide text-muted uppercase">{t.recipes.methods}</p>
-              <p className="mt-0.5 text-[15px] text-ink">{dish.methods.join(' · ')}</p>
+              <p className="mt-0.5 text-[15px] text-ink">{dish.methods.map(methodLabel).join(' · ')}</p>
             </div>
           )}
         </Card>

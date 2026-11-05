@@ -19,7 +19,7 @@ import { todayIso } from '@/core/dates';
 import { useHousehold } from '@/store/store';
 import { actions } from '@/store/actions';
 import { ctxOf, type Ctx } from '@/store/selectors';
-import { t } from '@/i18n/en';
+import { methodLabel, ruleSourceLabel, t } from '@/i18n/en';
 import { Button } from '../components/Button';
 import { Card, SectionTitle } from '../components/Card';
 import { Badge, Chip } from '../components/Chip';
@@ -206,7 +206,7 @@ function DailyRules({ ctx }: { ctx: Ctx }) {
       label: 'Vegetables',
       value: `Free, required at ${r.veg.requiredAt.map((m) => t.meals[m].toLowerCase()).join(' and ')}`,
     },
-    { label: 'Cooking', value: r.methods.join(' · ') },
+    { label: 'Cooking', value: r.methods.map(methodLabel).join(' · ') },
     {
       label: 'Condiments',
       value: `${r.condiments.length} allowed · grated cheese up to ${r.gratedCheeseMaxTsp} tsp`,
@@ -246,7 +246,7 @@ function WeeklyRules({ rules }: { rules: FrequencyRule[] }) {
                 <span className="tabular-nums">{boundsText(r)}</span>
                 <span aria-hidden="true">·</span>
                 <span>{r.scope === 'main_meals' ? 'main meals only' : 'every meal counts'}</span>
-                <Badge>{r.source}</Badge>
+                <Badge>{ruleSourceLabel(r.source)}</Badge>
                 {r.review && <Badge tone="warn">{t.week.review}</Badge>}
               </div>
             </li>
@@ -369,8 +369,9 @@ function OptionChip({
   const tone = index === 0 ? 'olive' : 'neutral';
   if (option.kind === 'free' || option.qty.kind === 'free') {
     const name = option.kind === 'free' ? 'Free vegetables' : optionName(option, ctx);
+    // Nothing to edit on a free option, so the chip is static text (no button, no label beyond its words).
     return (
-      <Chip tone={tone} aria-label={`${name}, as much as you like`}>
+      <Chip tone={tone}>
         {name} <span className="font-medium">· free</span>
       </Chip>
     );

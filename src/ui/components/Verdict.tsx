@@ -27,10 +27,21 @@ const SUBGROUP_WORDS: Record<string, string> = {
 
 /** Display-only: core wording keeps raw ids and Italian meal names; the card reads them out in English. */
 export function prettyVerdictText(text: string): string {
-  return text
-    .replace(/\b([a-z]+_[a-z_]+)\b/g, (_, id: string) => `any ${SUBGROUP_WORDS[id] ?? id.replace(/_/g, ' ')}`)
-    .replace(/\bpranzo\b/g, 'lunch')
-    .replace(/\bcena\b/g, 'dinner');
+  return (
+    text
+      .replace(
+        /\b([a-z]+_[a-z_]+)\b/g,
+        (_, id: string) => `any ${SUBGROUP_WORDS[id] ?? id.replace(/_/g, ' ')}`,
+      )
+      .replace(/\bpranzo\b/g, 'lunch')
+      .replace(/\bcena\b/g, 'dinner')
+      // Role ids become their labels ("protein slot" → "Protein slot"); every sentence starts upper-case.
+      .replace(
+        /\b(cereal|bread|protein|veg|soup|topping) slot\b/g,
+        (_, r: string) => `${t.roles[r as keyof typeof t.roles] ?? r} slot`,
+      )
+      .replace(/(^|[.!?]\s+)([a-z])/g, (_, p: string, c: string) => p + c.toUpperCase())
+  );
 }
 const pretty = prettyVerdictText;
 
