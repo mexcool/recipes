@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
 // Relative base so the same build runs from any static host, a sub-path, or a hosted page.
 export default defineConfig({
@@ -37,5 +40,6 @@ export default defineConfig({
     }),
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version) },
   build: { target: 'es2022', sourcemap: false },
 });
