@@ -17,3 +17,9 @@ plans/*.private.json
 # Local scratch
 .DS_Store
 *.log
+
+# Build / test output
+dev-dist/
+playwright-report/
+test-results/
+coverage/
