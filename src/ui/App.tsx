@@ -1,6 +1,7 @@
 import { RouterProvider } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { store } from '@/store/store';
+import { installSyncTriggers } from '@/store/sync';
 import { t } from '@/i18n/en';
 import { router } from './router';
 import { ToastProvider } from './components/Feedback';
@@ -9,10 +10,15 @@ export function App() {
   const [ready, setReady] = useState(store.isReady());
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    let uninstall: (() => void) | undefined;
     store
       .init()
-      .then(() => setReady(true))
+      .then(() => {
+        setReady(true);
+        uninstall = installSyncTriggers();
+      })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    return () => uninstall?.();
   }, []);
   if (error) {
     return (

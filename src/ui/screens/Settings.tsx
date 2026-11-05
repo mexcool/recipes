@@ -26,6 +26,7 @@ import { Card, SectionTitle } from '../components/Card';
 import { Badge, Chip } from '../components/Chip';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Feedback';
+import { SyncCard } from '../components/SyncCard';
 
 const INPUT =
   'tap w-full rounded-2xl border border-line bg-surface-2 px-4 py-2.5 text-[15px] text-ink placeholder:text-muted';
@@ -216,6 +217,12 @@ function PrefsSection({ h, foods, foodMap }: { h: Household; foods: Food[]; food
           onChange={(splitFreshRun) => actions.setPrefs({ splitFreshRun })}
           label={t.settings.freshRun}
           hint="Fresh produce for the second half of the week goes on a small second list."
+        />
+        <Switch
+          checked={p.cookDouble}
+          onChange={(cookDouble) => actions.setPrefs({ cookDouble })}
+          label="Cook double once a week"
+          hint="One dish that keeps well is cooked once and eaten again a day or two later; the list buys it once."
         />
         <div className="py-3">
           <p className="text-[15px] text-ink">{t.settings.store}</p>
@@ -683,14 +690,7 @@ function DataSection() {
 function SyncSection({ h }: { h: Household }) {
   return (
     <Section title={t.settings.sync}>
-      <div className="flex items-center gap-2">
-        <Badge>Not configured</Badge>
-      </div>
-      <p className="mt-2 text-sm text-ink-2">
-        Sync needs the companion service, planned for a later milestone (M3). Until then nothing is sent
-        anywhere.
-      </p>
-      <p className="mt-2 text-sm text-muted">Use Export/Import to move the plan to a second phone for now.</p>
+      <SyncCard h={h} />
       <p className="mt-3 text-xs text-muted">
         Household id <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-ink-2">{h.id}</code>
       </p>

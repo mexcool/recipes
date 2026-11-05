@@ -87,18 +87,61 @@ function bindingFoods(b: DishBinding, foods: readonly Food[]): Food[] {
   return b.foods.map((id) => foods.find((f) => f.id === id)).filter((f): f is Food => !!f);
 }
 
+export const SUBGROUP_LABEL: Record<string, string> = {
+  cereal: 'any grain',
+  breakfast_cereal: 'any breakfast cereal',
+  bread: 'any bread',
+  bread_sub: 'any bread substitute',
+  tuber: 'potatoes',
+  fresh_pasta: 'fresh pasta',
+  legume_dry: 'any dried legumes',
+  legume_canned: 'any canned legumes',
+  tofu: 'tofu',
+  veg_burger: 'a veggie burger',
+  cheese_fresh: 'any fresh cheese',
+  cheese_aged: 'any aged cheese',
+  meat_white: 'any white meat',
+  meat_red: 'any red meat',
+  cured: 'any cured meat',
+  egg: 'eggs',
+  yogurt: 'yogurt',
+  dairy: 'milk or yogurt',
+  fruit: 'fruit',
+  oil: 'oil',
+  veg: 'vegetables',
+  veg_sugary: 'sugary vegetables',
+  frozen_soup: 'vegetable soup',
+  condiment: 'a condiment',
+  snack: 'a snack',
+  sweet: 'something sweet',
+  nut: 'nuts',
+  drink: 'a drink',
+};
+
+export const MEAL_LABEL: Record<string, string> = {
+  pranzo: 'lunch',
+  cena: 'dinner',
+  colazione: 'breakfast',
+  spuntino: 'morning snack',
+  merenda: 'afternoon snack',
+  spuntino_serale: 'evening snack',
+};
+
 function optionLabel(opt: SlotOption, food: Food | undefined): string {
   if (opt.kind === 'free') return 'free';
   const q = opt.qty;
+  if (q.kind === 'count' && food) return `${q.count} ${food.nameEn}`;
   const amount =
     q.kind === 'g'
       ? `${q.g} g`
       : q.kind === 'ml'
         ? `${q.ml} ml`
         : q.kind === 'count'
-          ? `${q.count} ${food?.nameEn ?? 'pieces'}`
+          ? `${q.count} pieces`
           : '';
-  return `${food?.nameEn ?? (opt.kind === 'subgroup' ? opt.subgroup : opt.foodId)} ${amount}`.trim();
+  const name =
+    food?.nameEn ?? (opt.kind === 'subgroup' ? (SUBGROUP_LABEL[opt.subgroup] ?? opt.subgroup) : opt.foodId);
+  return `${name} ${amount}`.trim();
 }
 
 /** Issues that do not depend on which meal the dish is matched against. */
@@ -238,7 +281,7 @@ export function validateDish(dish: Dish, rev: PlanRevision, foodList: readonly F
             role: b.role,
             foodId: exFood?.id ?? candidate.id,
             exchange: ex,
-            message: `${exFood?.nameEn ?? candidate.nameEn} is on the older exchange list for ${which} (${optionLabel({ kind: 'food', foodId: exFood?.id ?? candidate.id, qty: ex.qty }, exFood)} on that sheet) but not on this day template — ask the nutritionist`,
+            message: `${exFood?.nameEn ?? candidate.nameEn} is on the older exchange list for ${MEAL_LABEL[which] ?? which} (${optionLabel({ kind: 'food', foodId: exFood?.id ?? candidate.id, qty: ex.qty }, exFood)} on that sheet) but not on this day template — ask the nutritionist`,
           });
         } else {
           issues.push({
@@ -282,7 +325,7 @@ export function validateDish(dish: Dish, rev: PlanRevision, foodList: readonly F
 
 function summarise(dish: Dish, best: Fit | undefined, foods: ReadonlyMap<string, Food>): string {
   if (!best) return 'No template meal on this plan has the right slots for this dish.';
-  const where = `Day ${best.template} ${best.meal}`;
+  const where = `Day ${best.template} ${MEAL_LABEL[best.meal] ?? best.meal}`;
   const alts = best.matches
     .filter((m) => !m.isReference)
     .map((m) => `${foods.get(m.foodId)?.nameEn ?? m.foodId} alternative`);

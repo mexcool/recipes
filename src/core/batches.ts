@@ -10,7 +10,6 @@ import { diffDays } from './dates';
 import { resolveMeal, type ResolvedLine } from './resolve';
 import { qtyEquals } from './qty';
 import { checkWeek } from './check';
-import { isConsumed, type Now } from './consumed';
 import { isWeekend } from './dates';
 import { dishFitsMeal } from './dishfit';
 
@@ -24,7 +23,8 @@ export function sameLines(a: readonly ResolvedLine[], b: readonly ResolvedLine[]
 
 interface PlanLeftoversOpts {
   excluded?: ReadonlySet<string>;
-  now?: Now;
+  /** Meals the planner must not touch (locked, eaten, eating out). */
+  isKept?: (date: string, which: 'pranzo' | 'cena') => boolean;
   taste?: Record<string, TasteEntry>;
   /** At most this many batches per week (variety). */
   maxBatches?: number;
@@ -48,7 +48,7 @@ export function planLeftovers(
     m[which].locked ||
     m[which].status === 'consumed' ||
     m[which].kind !== 'planned' ||
-    (!!opts.now && isConsumed(m[which], m.date, which, opts.now));
+    (opts.isKept?.(m.date, which) ?? false);
   const usedDishes = new Set(
     week.days.flatMap((d) => MAIN_MEALS.map((w) => d[w].dishId)).filter((x): x is string => !!x),
   );

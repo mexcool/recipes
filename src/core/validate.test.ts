@@ -19,7 +19,7 @@ describe.each(PLANS)('the six starting dishes on the $name plan', ({ plan }) => 
     expect(v.best?.complete).toBe(true);
     expect(v.best?.meal).toBe('pranzo');
     expect(v.best?.matches.map((m) => m.foodId)).toContain('quinoa');
-    expect(v.summary).toMatch(/^Fits Day \d pranzo/);
+    expect(v.summary).toMatch(/^Fits Day \d lunch/);
   });
 
   it('couscous with tofu, broccoli and carrots: fits a grain + legume lunch with the tofu alternative; carrots flagged as sugary', () => {

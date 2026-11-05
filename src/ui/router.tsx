@@ -9,6 +9,7 @@ import { RecipeDetailScreen } from './screens/RecipeDetail';
 import { RecipeEditScreen } from './screens/RecipeEdit';
 import { SettingsScreen } from './screens/Settings';
 import { PlanScreen } from './screens/Plan';
+import { JoinScreen } from './screens/Join';
 
 const rootRoute = createRootRoute({ component: Shell });
 const tonight = createRoute({ getParentRoute: () => rootRoute, path: '/', component: TonightScreen });
@@ -45,6 +46,15 @@ const settings = createRoute({
   component: SettingsScreen,
 });
 const plan = createRoute({ getParentRoute: () => rootRoute, path: '/settings/plan', component: PlanScreen });
+const join = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/join',
+  component: JoinScreen,
+  validateSearch: (search: Record<string, unknown>) => ({
+    s: typeof search.s === 'string' ? search.s : undefined,
+    t: typeof search.t === 'string' ? search.t : undefined,
+  }),
+});
 
 const routeTree = rootRoute.addChildren([
   tonight,
@@ -57,6 +67,7 @@ const routeTree = rootRoute.addChildren([
   recipeDetail,
   settings,
   plan,
+  join,
 ]);
 
 export const router = createRouter({ routeTree, history: createHashHistory(), scrollRestoration: true });

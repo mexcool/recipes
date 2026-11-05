@@ -86,11 +86,16 @@ export function generateWeek(input: PlannerInput): PlannerResult {
   const notes: string[] = [];
   const dates = Array.from({ length: 7 }, (_, i) => addDays(input.monday, i));
   const excluded = excludedFoods(prefs, input.taste);
+  // Kept-ness comes from the week being regenerated (locked, eaten by tap or clock, eating out) — never
+  // from the fresh skeleton, so a week planned mid-week still gets its past days filled in.
+  const keptAt = new Set<string>();
+  for (const d of input.keep?.days ?? [])
+    for (const which of MAIN_MEALS)
+      if (isKept(d[which], d.date, which, input.now)) keptAt.add(`${d.date}|${which}`);
+  const isKeptAt = (date: string, which: 'pranzo' | 'cena') => keptAt.has(`${date}|${which}`);
   const keptMeal = (date: string, which: 'pranzo' | 'cena'): Meal | undefined => {
-    const d = input.keep?.days.find((x) => x.date === date);
-    if (!d) return undefined;
-    const m = d[which];
-    return isKept(m, date, which, input.now) ? m : undefined;
+    if (!isKeptAt(date, which)) return undefined;
+    return input.keep?.days.find((x) => x.date === date)?.[which];
   };
 
   // --- 1. Template placement ---------------------------------------------------------------------
@@ -118,12 +123,12 @@ export function generateWeek(input: PlannerInput): PlannerResult {
           : emptyMeal(),
     };
   });
-  const menus = assignFixedMenus(days, input, foods, excluded, rnd);
+  const menus = assignFixedMenus(days, input, foods, excluded, rnd, isKeptAt);
   if (!menus.ok) return menus;
 
   // --- 3. Slot choices under frequency rules -----------------------------------------------------
   const history = historyFromWeeks(input.history, rev, foods, dishes);
-  const choice = chooseOptions(days, input, foods, excluded, history, rnd);
+  const choice = chooseOptions(days, input, foods, excluded, history, rnd, isKeptAt);
   if (!choice.ok) return choice;
 
   // --- 4. Dishes, grains and vegetables ---------------------------------------------------------
@@ -136,7 +141,7 @@ export function generateWeek(input: PlannerInput): PlannerResult {
       if (meal.kind !== 'planned') continue;
       const mt = mealTemplate(t, which);
       if (!mt) continue;
-      if (isKept(meal, day.date, which, input.now)) {
+      if (isKeptAt(day.date, which)) {
         weekHistory.push({
           date: day.date,
           which,
@@ -188,7 +193,11 @@ export function generateWeek(input: PlannerInput): PlannerResult {
 
   // --- 5. Batches --------------------------------------------------------------------------------
   const batches = prefs.cookDouble
-    ? planLeftovers(week, rev, foods, dishes, input.members, { excluded, now: input.now, taste: input.taste })
+    ? planLeftovers(week, rev, foods, dishes, input.members, {
+        excluded,
+        isKept: isKeptAt,
+        taste: input.taste,
+      })
     : [];
 
   // --- 6. Prove it -------------------------------------------------------------------------------
@@ -325,18 +334,21 @@ function* permutations<T>(items: T[]): Generator<T[]> {
 // ------------------------------------------------------------------------------------------------
 
 /** Occurrences a non-kept meal will certainly produce: slots where every option matches the rule. */
+type KeptAt = (date: string, which: 'pranzo' | 'cena') => boolean;
+
 function unavoidableOccurrences(
   days: Day[],
   input: PlannerInput,
   foods: Map<string, Food>,
   rule: FrequencyRule,
+  isKeptAt: KeptAt,
 ): Occurrence[] {
   const out: Occurrence[] = [];
   for (const day of days) {
     const t = templateFor(input.rev, day.template);
     for (const which of MAIN_MEALS) {
       const meal = day[which];
-      if (meal.kind !== 'planned' || isKept(meal, day.date, which, input.now)) continue;
+      if (meal.kind !== 'planned' || isKeptAt(day.date, which)) continue;
       const mt = mealTemplate(t, which);
       if (!mt) continue;
       for (const slot of mt.slots) {
@@ -383,6 +395,7 @@ function assignFixedMenus(
   foods: Map<string, Food>,
   excluded: Set<string>,
   rnd: () => number,
+  isKeptAt: KeptAt,
 ): { ok: true } | { ok: false; reason: string; witnesses: string[] } {
   const { rev } = input;
   const usable = (items: { foodId: string }[]) => items.every((it) => !excluded.has(it.foodId));
@@ -402,8 +415,7 @@ function assignFixedMenus(
     };
   const used = { b: new Map<string, number>(), m: new Map<string, number>() };
   for (const day of days) {
-    const kept =
-      isKept(day.pranzo, day.date, 'pranzo', input.now) || isKept(day.cena, day.date, 'cena', input.now);
+    const kept = isKeptAt(day.date, 'pranzo') || isKeptAt(day.date, 'cena');
     const keptDay = input.keep?.days.find((d) => d.date === day.date);
     if (kept && keptDay?.colazione) {
       day.colazione = keptDay.colazione;
@@ -419,11 +431,11 @@ function assignFixedMenus(
   const weekTmp = (ds: Day[]): Week => ({ ...emptyWeek(input), days: ds });
   const skeleton = (d: Day): Day => ({
     ...d,
-    pranzo: isKept(d.pranzo, d.date, 'pranzo', input.now) ? d.pranzo : skipMeal(d.pranzo),
-    cena: isKept(d.cena, d.date, 'cena', input.now) ? d.cena : skipMeal(d.cena),
+    pranzo: isKeptAt(d.date, 'pranzo') ? d.pranzo : skipMeal(d.pranzo),
+    cena: isKeptAt(d.date, 'cena') ? d.cena : skipMeal(d.cena),
   });
   const unavoidable = new Map(
-    weeklyUnitRules.map((r) => [r.id, unavoidableOccurrences(days, input, foods, r)]),
+    weeklyUnitRules.map((r) => [r.id, unavoidableOccurrences(days, input, foods, r, isKeptAt)]),
   );
 
   for (const day of days) {
@@ -493,6 +505,7 @@ function chooseOptions(
   excluded: Set<string>,
   history: HistoryEntry[],
   rnd: () => number,
+  isKeptAt: KeptAt,
 ): { ok: true } | { ok: false; reason: string; witnesses: string[] } {
   const { rev } = input;
   const weeklyRules = rev.exchange.frequency.filter((r) => r.enforce);
@@ -502,7 +515,7 @@ function chooseOptions(
     const t = templateFor(rev, day.template);
     for (const which of MAIN_MEALS) {
       const meal = day[which];
-      if (meal.kind !== 'planned' || isKept(meal, day.date, which, input.now)) continue;
+      if (meal.kind !== 'planned' || isKeptAt(day.date, which)) continue;
       const mt = mealTemplate(t, which);
       if (!mt) continue;
       for (const slot of mt.slots) {
@@ -537,8 +550,8 @@ function chooseOptions(
       ...emptyWeek(input),
       days: days.map((d) => ({
         ...d,
-        pranzo: isKept(d.pranzo, d.date, 'pranzo', input.now) ? d.pranzo : skipMeal(d.pranzo),
-        cena: isKept(d.cena, d.date, 'cena', input.now) ? d.cena : skipMeal(d.cena),
+        pranzo: isKeptAt(d.date, 'pranzo') ? d.pranzo : skipMeal(d.pranzo),
+        cena: isKeptAt(d.date, 'cena') ? d.cena : skipMeal(d.cena),
       })),
     } as Week,
     rev,

@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import { Link } from '@tanstack/react-router';
-import { ChefHat, Check, Clock, RefreshCw, Undo2 } from 'lucide-react';
+import { ChefHat, Check, Clock, MoreHorizontal, RefreshCw, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import type { Day, MainMeal } from '@/core/model';
 import { WEEKDAY_LONG, weekdayIndex } from '@/core/dates';
@@ -13,6 +13,8 @@ import { Button } from './Button';
 import { PlateLines } from './PlateLines';
 import { Sheet } from './Sheet';
 import { useToast } from './Feedback';
+import { MealSheet } from './MealSheet';
+import { useNow } from '@/store/now';
 
 export function MealCard({
   ctx,
@@ -33,6 +35,9 @@ export function MealCard({
   const toast = useToast();
   const [open, setOpen] = useState<string | null>(null);
   const [doneOpen, setDoneOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const now = useNow();
+  const week = ctx.h.weeks.find((w) => w.id === weekId);
   const constrained = ctx.h.members.find((m) => m.constrained);
   const partner = ctx.h.members.find((m) => !m.constrained);
   const dayLabel = label ?? `${WEEKDAY_LONG[weekdayIndex(day.date)]} · ${t.meals[which]}`;
@@ -154,9 +159,29 @@ export function MealCard({
                   {t.tonight.done}
                 </Button>
               )}
+              <Button
+                size="lg"
+                variant="ghost"
+                icon={<MoreHorizontal size={18} />}
+                onClick={() => setMoreOpen(true)}
+                aria-label="More options"
+              >
+                More
+              </Button>
             </div>
           )}
         </>
+      )}
+      {week && (
+        <MealSheet
+          ctx={ctx}
+          week={week}
+          date={day.date}
+          which={which}
+          now={now}
+          open={moreOpen}
+          onClose={() => setMoreOpen(false)}
+        />
       )}
       <Sheet open={doneOpen} onClose={() => setDoneOpen(false)} title={t.tonight.done}>
         <p className="mb-3 text-ink-2">How was it? (optional)</p>
