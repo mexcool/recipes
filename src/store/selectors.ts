@@ -1,4 +1,5 @@
 import type { Batch, Day, Dish, Food, Household, MainMeal, Plan, PlanRevision, Week } from '@/core/model';
+import { dishTitle as renderTitle } from '@/core/title';
 import { activePlan, activeRevision, mealTemplate, templateFor } from '@/core/model';
 import { addDays, mondayOf } from '@/core/dates';
 import { foodsFor } from '@/core/household';
@@ -109,7 +110,7 @@ export function dishTitle(
 ): string | undefined {
   const d = dishId ? ctx.dishes.get(dishId) : undefined;
   if (!d) return undefined;
-  return lang === 'it' ? d.titleIt : d.titleEn;
+  return renderTitle(d, ctx.foodMap, undefined, lang);
 }
 
 /** Render a dish step: {{role}} placeholders become the chosen food and her amount. */

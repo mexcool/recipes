@@ -2,6 +2,7 @@ import type { Day, Dish, MainMeal } from '@/core/model';
 import type { Plates } from '@/core/plates';
 import type { ResolvedLine } from '@/core/resolve';
 import { inSeasonMonth } from '@/core/season';
+import { dishTitles } from '@/core/title';
 import { monthOf } from '@/core/dates';
 import { linesFor, platesFor, type Ctx } from '@/store/selectors';
 import { t } from '@/i18n/en';
@@ -52,6 +53,7 @@ export function mealView(ctx: Ctx, day: Day, which: MainMeal): MealView {
     .map((l) => ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId);
   const vegNames = meal.veg.map((v) => ctx.foodMap.get(v)?.nameEn ?? v);
   const foodsLine = [...names, ...(vegNames.length ? [vegNames.join(', ')] : [])].join(' · ');
+  const titles = dish ? dishTitles(dish, ctx.foodMap, lines) : undefined;
   const badges: MealView['badges'] = [];
   if (meal.leftoverOf) badges.push({ text: t.week.leftover, tone: 'olive' });
   if (meal.batchId) badges.push({ text: t.week.cooksBatch, tone: 'olive' });
@@ -59,8 +61,8 @@ export function mealView(ctx: Ctx, day: Day, which: MainMeal): MealView {
   if (dish?.status === 'proposed') badges.push({ text: t.recipes.proposed, tone: 'warn' });
   return {
     kind: 'planned',
-    title: dish ? dish.titleEn : names.length ? `${names.join(', ')}` : t.tonight.noDish,
-    ...(dish ? { titleIt: dish.titleIt } : {}),
+    title: titles ? titles.en : names.length ? `${names.join(', ')}` : t.tonight.noDish,
+    ...(titles?.it ? { titleIt: titles.it } : {}),
     ...(dish ? { dish } : {}),
     lines,
     plates,

@@ -3,6 +3,7 @@ import { ArrowLeft, Ban, Clock, Pencil, Sparkles, ThumbsDown, ThumbsUp, Trash2 }
 import { useMemo, useState, type ReactNode } from 'react';
 import type { DishBinding } from '@/core/model';
 import { validateDish } from '@/core/validate';
+import { dishTitles } from '@/core/title';
 import { useHousehold } from '@/store/store';
 import { actions } from '@/store/actions';
 import { ctxOf, type Ctx } from '@/store/selectors';
@@ -24,6 +25,7 @@ export function RecipeDetailScreen() {
   const dish = id ? ctx.dishes.get(id) : undefined;
   const verdict = useMemo(() => (dish ? validateDish(dish, ctx.rev, ctx.foods) : undefined), [dish, ctx]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const titles = useMemo(() => (dish ? dishTitles(dish, ctx.foodMap) : { en: '' }), [dish, ctx]);
 
   if (!dish || !verdict) {
     return (
@@ -80,8 +82,8 @@ export function RecipeDetailScreen() {
           {dish.origin !== 'seed' && <Badge>{dish.origin === 'user' ? 'Yours' : dish.origin}</Badge>}
           <TasteMark taste={taste} />
         </div>
-        <h1 className="text-3xl leading-tight font-semibold">{dish.titleEn}</h1>
-        {dish.titleIt && dish.titleIt !== dish.titleEn && <p className="mt-1 text-ink-2">{dish.titleIt}</p>}
+        <h1 className="text-3xl leading-tight font-semibold">{titles.en}</h1>
+        {titles.it && <p className="mt-1 text-ink-2">{titles.it}</p>}
         <div className="mt-3 flex flex-wrap gap-2">
           <Chip tone="olive">
             <Clock size={14} aria-hidden="true" /> {dish.minutes} {t.recipes.minutes}
@@ -97,7 +99,7 @@ export function RecipeDetailScreen() {
       <VerdictCard
         verdict={verdict}
         ctx={ctx}
-        dish={dish}
+        dish={{ titleEn: titles.en }}
         onAsk={(q) => {
           actions.addQuestion(q, 'validator');
           toast(t.recipes.questionAdded, 'ok');
@@ -218,7 +220,7 @@ export function RecipeDetailScreen() {
       <Sheet
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        title={`${t.recipes.delete} "${dish.titleEn}"?`}
+        title={`${t.recipes.delete} "${titles.en}"?`}
       >
         <p className="mb-4 text-ink-2">
           The dish leaves your book. Meals already planned with it keep their foods; only the recipe text
@@ -231,7 +233,7 @@ export function RecipeDetailScreen() {
             onClick={() => {
               actions.deleteDish(dish.id);
               setConfirmDelete(false);
-              toast(`Deleted "${dish.titleEn}".`, 'ok');
+              toast(`Deleted "${titles.en}".`, 'ok');
               navigate({ to: '/recipes' });
             }}
           >

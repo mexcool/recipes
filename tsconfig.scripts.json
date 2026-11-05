@@ -1,22 +1,8 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "types": [
-      "node",
-      "vite/client",
-      "vite-plugin-pwa/client",
-      "vitest/globals",
-      "@testing-library/jest-dom"
-    ],
-    "lib": [
-      "ES2023",
-      "DOM"
-    ]
+    "types": ["node", "vite/client", "vite-plugin-pwa/client", "vitest/globals", "@testing-library/jest-dom"],
+    "lib": ["ES2023", "DOM"]
   },
-  "include": [
-    "scripts",
-    "src",
-    "plans/*.json",
-    "plans/private/*.ts"
-  ]
+  "include": ["scripts", "src", "plans/*.json", "plans/private/*.ts"]
 }

@@ -280,7 +280,7 @@ export const FOODS: Food[] = [
   f({
     id: 'mais_scatola',
     nameIt: 'mais dolce in scatola',
-    nameEn: 'canned sweetcorn',
+    nameEn: 'sweetcorn',
     subgroup: 'bread_sub',
     section: 'canned',
     purchaseUnits: [can('lattina 300 g (160 g sgocciolato)', 300, 160)],
@@ -367,7 +367,7 @@ export const FOODS: Food[] = [
   f({
     id: 'mozzarella',
     nameIt: 'mozzarella di vacca',
-    nameEn: 'cow mozzarella',
+    nameEn: 'mozzarella',
     subgroup: 'cheese_fresh',
     pieceG: 125,
     section: 'dairy',

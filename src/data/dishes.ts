@@ -58,8 +58,8 @@ export const SEED_DISHES: Dish[] = [
   // ---------------------------------------------------------------------------------------------
   dish({
     id: 'couscous-chickpeas-tomatoes',
-    titleIt: 'Cous cous con ceci e pomodorini',
-    titleEn: 'Couscous with chickpeas and cherry tomatoes',
+    titleIt: '{{cereal}} con ceci e pomodorini',
+    titleEn: '{{cereal}} with chickpeas and cherry tomatoes',
     bindings: [
       b(
         'cereal',
@@ -86,8 +86,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'quinoa-chickpea-salad',
-    titleIt: 'Quinoa con ceci, lattuga e pomodori',
-    titleEn: 'Quinoa with chickpeas, lettuce and tomatoes',
+    titleIt: '{{cereal}} con ceci, lattuga e pomodori',
+    titleEn: '{{cereal}} with chickpeas, lettuce and tomatoes',
     bindings: [
       b(
         'cereal',
@@ -113,8 +113,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'pasta-lentil-ragu',
-    titleIt: 'Pasta con sugo di lenticchie',
-    titleEn: 'Pasta with lentil sauce',
+    titleIt: '{{cereal}} con sugo di lenticchie',
+    titleEn: '{{cereal}} with lentil sauce',
     bindings: [
       b(
         'cereal',
@@ -168,8 +168,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'couscous-tofu-steamed-veg',
-    titleIt: 'Cous cous con tofu, broccoli e carote al vapore',
-    titleEn: 'Couscous with tofu and steamed broccoli and carrots',
+    titleIt: '{{cereal}} con tofu, broccoli e carote al vapore',
+    titleEn: '{{cereal}} with tofu and steamed broccoli and carrots',
     bindings: [
       b('cereal', ['cous_cous', 'quinoa', 'riso_basmati', 'miglio'], 'steamed', 'together_weigh_cooked'),
       b('protein', ['tofu'], 'pan-seared in cubes'),
@@ -190,8 +190,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'farro-bean-salad',
-    titleIt: 'Insalata di farro con fagioli e verdure',
-    titleEn: 'Spelt salad with beans and vegetables',
+    titleIt: 'Insalata di {{cereal}} con fagioli e verdure',
+    titleEn: '{{cereal}} salad with beans and vegetables',
     bindings: [
       b(
         'cereal',
@@ -216,8 +216,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'tofu-stirfry-rice',
-    titleIt: 'Tofu saltato con verdure e riso',
-    titleEn: 'Tofu stir-fry with vegetables and rice',
+    titleIt: 'Tofu saltato con verdure e {{cereal}}',
+    titleEn: 'Tofu stir-fry with vegetables and {{cereal}}',
     bindings: [
       b(
         'cereal',
@@ -242,8 +242,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'pasta-chickpeas-rosemary',
-    titleIt: 'Pasta e ceci al rosmarino',
-    titleEn: 'Pasta and chickpeas with rosemary',
+    titleIt: '{{cereal}} e ceci al rosmarino',
+    titleEn: '{{cereal}} and chickpeas with rosemary',
     bindings: [
       b(
         'cereal',
@@ -269,8 +269,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'lentil-barley-bowl',
-    titleIt: 'Orzo con lenticchie e verdure arrosto',
-    titleEn: 'Barley with lentils and roasted vegetables',
+    titleIt: '{{cereal}} con lenticchie e verdure arrosto',
+    titleEn: '{{cereal}} with lentils and roasted vegetables',
     bindings: [
       b('cereal', ['orzo_perlato', 'farro', 'quinoa', 'cous_cous'], 'boiled', 'together_weigh_cooked'),
       b('protein', LENTILS, 'warmed with the vegetables'),
@@ -290,8 +290,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'buckwheat-tofu-greens',
-    titleIt: 'Grano saraceno con tofu e cime di rapa',
-    titleEn: 'Buckwheat with tofu and turnip tops',
+    titleIt: '{{cereal}} con tofu e cime di rapa',
+    titleEn: '{{cereal}} with tofu and turnip tops',
     bindings: [
       b(
         'cereal',
@@ -316,8 +316,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'rice-beans-peppers',
-    titleIt: 'Riso con fagioli e peperoni',
-    titleEn: 'Rice with beans and peppers',
+    titleIt: '{{cereal}} con fagioli e peperoni',
+    titleEn: '{{cereal}} with beans and peppers',
     bindings: [
       b(
         'cereal',
@@ -342,8 +342,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'pasta-e-fagioli',
-    titleIt: 'Pasta e fagioli',
-    titleEn: 'Pasta and beans',
+    titleIt: '{{cereal}} e fagioli',
+    titleEn: '{{cereal}} and beans',
     bindings: [
       b(
         'cereal',
@@ -416,10 +416,7 @@ export const SEED_DISHES: Dish[] = [
     id: 'caprese-bread',
     titleIt: 'Insalata di pomodoro e mozzarella con pane',
     titleEn: 'Tomato and mozzarella salad with bread',
-    bindings: [
-      b('bread', BREADS, 'sliced'),
-      b('protein', ['mozzarella', 'mozzarella_light', 'primosale'], 'torn'),
-    ],
+    bindings: [b('bread', BREADS, 'sliced'), b('protein', ['mozzarella', 'mozzarella_light'], 'torn')],
     freeVeg: ['pomodori', 'rucola'],
     condiments: ['olio_evo', 'basilico', 'origano', 'pepe'],
     methods: [],
@@ -435,8 +432,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'ricotta-spinach-toast',
-    titleIt: 'Pane tostato con ricotta e spinaci saltati',
-    titleEn: 'Toast with ricotta and wilted spinach',
+    titleIt: 'Pane tostato con {{protein}} e spinaci saltati',
+    titleEn: 'Toast with {{protein}} and wilted spinach',
     bindings: [
       b('bread', BREADS, 'toasted'),
       b('protein', ['ricotta', 'primosale', 'fiocchi_di_latte'], 'spread'),
@@ -455,8 +452,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'primosale-grilled-veg-plate',
-    titleIt: 'Primo sale con verdure grigliate e pane',
-    titleEn: 'Primo sale with grilled vegetables and bread',
+    titleIt: '{{protein}} con verdure grigliate e {{bread}}',
+    titleEn: '{{protein}} with grilled vegetables and {{bread}}',
     bindings: [
       b('bread', [...BREADS, 'mais_scatola'], 'on the side'),
       b('protein', FRESH_CHEESE_LUNCH, 'in slices'),
@@ -475,8 +472,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'mozzarella-tomato-corn-salad',
-    titleIt: 'Insalatona con mozzarella e mais',
-    titleEn: 'Big salad with mozzarella and sweetcorn',
+    titleIt: 'Insalatona con {{protein}} e {{bread}}',
+    titleEn: 'Big salad with {{protein}} and {{bread}}',
     bindings: [
       b('bread', ['mais_scatola', ...CRACKERS], 'drained / on the side'),
       b('protein', ['mozzarella', 'mozzarella_light', 'primosale'], 'cubed'),
@@ -498,8 +495,8 @@ export const SEED_DISHES: Dish[] = [
   // ---------------------------------------------------------------------------------------------
   dish({
     id: 'pumpkin-soup-bresaola-bread',
-    titleIt: 'Vellutata di zucca con bresaola e pane',
-    titleEn: 'Pumpkin soup with bresaola and bread',
+    titleIt: 'Vellutata di zucca con {{protein}} e pane',
+    titleEn: 'Pumpkin soup with {{protein}} and bread',
     bindings: [
       b('bread', BREADS, 'toasted'),
       b(
@@ -524,8 +521,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'bresaola-rocket-panino',
-    titleIt: 'Panino con bresaola, rucola e limone',
-    titleEn: 'Bresaola and rocket sandwich',
+    titleIt: 'Panino con {{protein}}, rucola e limone',
+    titleEn: '{{protein}} and rocket sandwich',
     bindings: [
       b('bread', BREADS, 'split'),
       b(
@@ -548,8 +545,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'ham-fennel-orange-plate',
-    titleIt: 'Prosciutto con insalata di finocchi e pane',
-    titleEn: 'Ham with fennel salad and bread',
+    titleIt: '{{protein}} con insalata di finocchi e {{bread}}',
+    titleEn: '{{protein}} with fennel salad and {{bread}}',
     bindings: [
       b('bread', [...BREADS, ...CRACKERS], 'on the side'),
       b(
@@ -572,8 +569,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'sliced-chicken-corn-salad',
-    titleIt: 'Insalata con affettato e mais',
-    titleEn: 'Salad with sliced meats and sweetcorn',
+    titleIt: 'Insalata con {{protein}} e {{bread}}',
+    titleEn: 'Salad with {{protein}} and {{bread}}',
     bindings: [
       b('bread', ['mais_scatola', ...CRACKERS], 'drained / on the side'),
       b('protein', ['arrosto_pollo_affettato', 'bresaola', 'prosciutto_cotto'], 'cut into strips'),
@@ -592,8 +589,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'crackers-ham-crudites',
-    titleIt: 'Cracker con prosciutto e verdure crude',
-    titleEn: 'Crackers with ham and crudités',
+    titleIt: '{{bread}} con {{protein}} e verdure crude',
+    titleEn: '{{bread}} with {{protein}} and crudités',
     bindings: [
       b('bread', [...CRACKERS, ...BREADS], 'on the side'),
       b('protein', ['prosciutto_cotto', 'prosciutto_crudo', 'bresaola'], 'rolled'),
@@ -712,7 +709,10 @@ export const SEED_DISHES: Dish[] = [
     id: 'veal-mushrooms-wine',
     titleIt: 'Vitello ai funghi e vino bianco',
     titleEn: 'Veal with mushrooms and white wine',
-    bindings: [b('protein', RED_MEAT, 'thin slices'), b('bread', [...BREADS, 'patate'], 'on the side')],
+    bindings: [
+      b('protein', ['vitello_filetto', 'vitellone_magro'], 'thin slices'),
+      b('bread', [...BREADS, 'patate'], 'on the side'),
+    ],
     freeVeg: ['funghi'],
     condiments: ['olio_evo', 'vino_bianco', 'aglio', 'prezzemolo', 'brodo_vegetale'],
     methods: ['padella'],
@@ -770,8 +770,8 @@ export const SEED_DISHES: Dish[] = [
   // ---------------------------------------------------------------------------------------------
   dish({
     id: 'lemon-chicken-chard',
-    titleIt: 'Pollo al limone in padella con bietole',
-    titleEn: 'Pan-fried lemon chicken with chard',
+    titleIt: '{{protein}} al limone in padella con bietole',
+    titleEn: 'Pan-fried lemon {{protein}} with chard',
     bindings: [
       b('protein', ['petto_pollo', 'tacchino_petto', 'pollo_coscia'], 'flattened and pan-fried'),
       b('bread', [...BREADS, ...CRACKERS], 'on the side'),
@@ -789,8 +789,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'chicken-curry-veg',
-    titleIt: 'Pollo speziato con verdure',
-    titleEn: 'Spiced chicken with vegetables',
+    titleIt: '{{protein}} alle spezie con verdure',
+    titleEn: 'Spiced {{protein}} with vegetables',
     bindings: [
       b('protein', ['petto_pollo', 'tacchino_petto', 'pollo_coscia'], 'in strips'),
       b('bread', [...BREADS, 'patate', ...CRACKERS], 'on the side'),
@@ -809,8 +809,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'roast-chicken-thigh-potatoes',
-    titleIt: 'Coscia di pollo al forno con patate e rosmarino',
-    titleEn: 'Roast chicken thigh with potatoes and rosemary',
+    titleIt: '{{protein}} al forno con patate e rosmarino',
+    titleEn: 'Roast {{protein}} with potatoes and rosemary',
     bindings: [
       b('protein', ['pollo_coscia', 'petto_pollo', 'coniglio', 'tacchino_petto'], 'roasted'),
       b('bread', ['patate'], 'roasted alongside'),
@@ -849,8 +849,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'turkey-saltimbocca-sage',
-    titleIt: 'Tacchino alla salvia con verdure al vapore',
-    titleEn: 'Turkey with sage and steamed vegetables',
+    titleIt: '{{protein}} alla salvia con verdure al vapore',
+    titleEn: '{{protein}} with sage and steamed vegetables',
     bindings: [
       b('protein', ['tacchino_petto', 'petto_pollo'], 'thin escalopes'),
       b('bread', [...BREADS, ...CRACKERS], 'on the side'),
@@ -869,8 +869,8 @@ export const SEED_DISHES: Dish[] = [
   }),
   dish({
     id: 'chicken-foil-parcel',
-    titleIt: 'Pollo al cartoccio con verdure',
-    titleEn: 'Chicken parcel with vegetables',
+    titleIt: '{{protein}} al cartoccio con verdure',
+    titleEn: '{{protein}} parcel with vegetables',
     bindings: [
       b('protein', ['petto_pollo', 'pollo_coscia', 'tacchino_petto'], 'baked in a parcel'),
       b('bread', [...BREADS, 'patate'], 'on the side'),

@@ -16,6 +16,7 @@ import type {
 } from './model';
 import { MAIN_MEALS, mealTemplate, templateFor } from './model';
 import { optionCandidates } from './resolve';
+import { dishTitle } from './title';
 import { collectOccurrences, evaluateRule, ruleMatches, type Occurrence } from './frequency';
 
 export interface FitMatch {
@@ -319,7 +320,7 @@ export function validateDish(dish: Dish, rev: PlanRevision, foodList: readonly F
   const questions: string[] = [];
   const summary = summarise(dish, best, foods);
   if (best && !best.complete && best.exchangeFallbacks.length)
-    questions.push(`${dish.titleEn}: ${best.exchangeFallbacks.map((e) => e.message).join('; ')}`);
+    questions.push(`${dishTitle(dish, foods)}: ${best.exchangeFallbacks.map((e) => e.message).join('; ')}`);
   return { fits, ...(best ? { best } : {}), summary, questions, issues: general };
 }
 

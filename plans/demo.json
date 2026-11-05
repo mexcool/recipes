@@ -466,11 +466,7 @@
             "id": "legumes",
             "label": "Legumes at least 3 times a week",
             "subject": {
-              "subgroups": [
-                "legume_canned",
-                "legume_dry",
-                "tofu"
-              ]
+              "subgroups": ["legume_canned", "legume_dry", "tofu"]
             },
             "per": "week",
             "min": 3,
@@ -485,10 +481,7 @@
             "id": "cheese",
             "label": "Cheese at most 2 times a week",
             "subject": {
-              "subgroups": [
-                "cheese_fresh",
-                "cheese_aged"
-              ]
+              "subgroups": ["cheese_fresh", "cheese_aged"]
             },
             "per": "week",
             "max": 2,
@@ -503,9 +496,7 @@
             "id": "eggs",
             "label": "Whole eggs: 2 to 4 a week",
             "subject": {
-              "foodIds": [
-                "uova"
-              ]
+              "foodIds": ["uova"]
             },
             "per": "week",
             "min": 2,
@@ -521,9 +512,7 @@
             "id": "red_meat",
             "label": "Red meat at most twice a week",
             "subject": {
-              "subgroups": [
-                "meat_red"
-              ]
+              "subgroups": ["meat_red"]
             },
             "per": "week",
             "max": 2,
@@ -538,9 +527,7 @@
             "id": "white_meat",
             "label": "White meat at most 3 times a week",
             "subject": {
-              "subgroups": [
-                "meat_white"
-              ]
+              "subgroups": ["meat_white"]
             },
             "per": "week",
             "max": 3,
@@ -555,10 +542,7 @@
             "id": "tubers",
             "label": "Potatoes or gnocchi 1 to 2 times a week",
             "subject": {
-              "subgroups": [
-                "tuber",
-                "fresh_pasta"
-              ]
+              "subgroups": ["tuber", "fresh_pasta"]
             },
             "per": "week",
             "max": 2,
@@ -573,9 +557,7 @@
             "id": "cured",
             "label": "Cured meats occasionally",
             "subject": {
-              "subgroups": [
-                "cured"
-              ]
+              "subgroups": ["cured"]
             },
             "per": "week",
             "max": 3,
@@ -1756,23 +1738,14 @@
                 "kind": "g",
                 "g": 200
               },
-              "foodIds": [
-                "fragole",
-                "mirtilli",
-                "pesca",
-                "albicocche",
-                "melone",
-                "pompelmo"
-              ]
+              "foodIds": ["fragole", "mirtilli", "pesca", "albicocche", "melone", "pompelmo"]
             },
             {
               "qty": {
                 "kind": "g",
                 "g": 300
               },
-              "foodIds": [
-                "anguria"
-              ]
+              "foodIds": ["anguria"]
             }
           ],
           "weekdaysOnly": true,
@@ -1829,23 +1802,14 @@
                 "kind": "g",
                 "g": 150
               },
-              "foodIds": [
-                "mela",
-                "pera",
-                "arancia",
-                "kiwi"
-              ]
+              "foodIds": ["mela", "pera", "arancia", "kiwi"]
             },
             {
               "qty": {
                 "kind": "g",
                 "g": 200
               },
-              "foodIds": [
-                "fragole",
-                "mirtilli",
-                "pesca"
-              ]
+              "foodIds": ["fragole", "mirtilli", "pesca"]
             }
           ],
           "weekdaysOnly": false,
@@ -1864,14 +1828,7 @@
           "defaultTemplate": 6
         },
         "morningSnack": "weekdays_only",
-        "methods": [
-          "padella",
-          "forno",
-          "vapore",
-          "bollitura",
-          "cartoccio",
-          "friggitrice ad aria"
-        ],
+        "methods": ["padella", "forno", "vapore", "bollitura", "cartoccio", "friggitrice ad aria"],
         "condiments": [
           "olio_evo",
           "salsa_pomodoro",
@@ -1902,18 +1859,9 @@
         ],
         "gratedCheeseMaxTsp": 2,
         "veg": {
-          "requiredAt": [
-            "pranzo",
-            "cena"
-          ],
-          "limitSubgroups": [
-            "veg_sugary"
-          ],
-          "notVeg": [
-            "tuber",
-            "legume_canned",
-            "legume_dry"
-          ]
+          "requiredAt": ["pranzo", "cena"],
+          "limitSubgroups": ["veg_sugary"],
+          "notVeg": ["tuber", "legume_canned", "legume_dry"]
         }
       },
       "sourceDifferences": []

@@ -12,6 +12,7 @@ import { qtyEquals } from './qty';
 import { checkWeek } from './check';
 import { isWeekend } from './dates';
 import { dishFitsMeal } from './dishfit';
+import { dishTitle } from './title';
 
 export function sameLines(a: readonly ResolvedLine[], b: readonly ResolvedLine[]): boolean {
   if (a.length !== b.length) return false;
@@ -195,7 +196,7 @@ export function validateLeftover(
   if (dish?.batchable && diffDays(from.date, to.date) > dish.batchable.keepsDays)
     return {
       ok: false,
-      reason: `${dish.titleEn} keeps ${dish.batchable.keepsDays} day${dish.batchable.keepsDays > 1 ? 's' : ''}`,
+      reason: `${dishTitle(dish, foods)} keeps ${dish.batchable.keepsDays} day${dish.batchable.keepsDays > 1 ? 's' : ''}`,
     };
   const mta = mealTemplate(templateFor(rev, a.template), from.meal);
   const mtb = mealTemplate(templateFor(rev, b.template), to.meal);

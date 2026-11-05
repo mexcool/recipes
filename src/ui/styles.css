@@ -20,7 +20,8 @@
   --color-warn: #a86b1a;
   --color-warn-soft: #f8ead3;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
 
   --radius-card: 1.25rem;
@@ -84,12 +85,17 @@
     background: var(--color-cream);
     overscroll-behavior-y: none;
   }
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
     text-wrap: balance;
   }
-  button, input, select, textarea {
+  button,
+  input,
+  select,
+  textarea {
     font: inherit;
     color: inherit;
   }
@@ -99,7 +105,9 @@
     border-radius: 0.5rem;
   }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
@@ -127,7 +135,13 @@
     animation: sheet-up 180ms ease-out;
   }
   @keyframes sheet-up {
-    from { transform: translateY(24px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 }

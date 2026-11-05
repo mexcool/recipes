@@ -8,6 +8,7 @@ import { evaluateRules } from '../src/core/frequency';
 import { foodMap } from '../src/core/resolve';
 import { platesForDay } from '../src/core/plates';
 import { aggregateShopping } from '../src/core/shopping';
+import { dishTitle } from '../src/core/title';
 import { PrefsSchema } from '../src/core/model';
 
 const which = process.argv[2] ?? 'demo';
@@ -21,7 +22,18 @@ const members = [
   { id: 'p', name: 'Partner', constrained: false, multiplier: 1.4 },
 ];
 const prefs = PrefsSchema.parse({});
-const res = generateWeek({ planId: plan.id, rev, foods: FOODS, dishes: SEED_DISHES, members, prefs, taste: {}, history: [], monday: '2026-11-09', seed });
+const res = generateWeek({
+  planId: plan.id,
+  rev,
+  foods: FOODS,
+  dishes: SEED_DISHES,
+  members,
+  prefs,
+  taste: {},
+  history: [],
+  monday: '2026-11-09',
+  seed,
+});
 if (!res.ok) {
   console.log('UNSATISFIABLE:', res.reason, res.witnesses);
   process.exit(1);
@@ -29,7 +41,9 @@ if (!res.ok) {
 const foods = foodMap(FOODS);
 const dishes = new Map(SEED_DISHES.map((d) => [d.id, d]));
 for (const d of res.week.days) {
-  console.log(`\n${d.date}  template ${d.template}  breakfast=${d.colazione} snack=${d.spuntino ? 'fruit' : '-'} merenda=${d.merenda}`);
+  console.log(
+    `\n${d.date}  template ${d.template}  breakfast=${d.colazione} snack=${d.spuntino ? 'fruit' : '-'} merenda=${d.merenda}`,
+  );
   for (const which of ['pranzo', 'cena'] as const) {
     const m = d[which];
     if (m.kind !== 'planned') {
@@ -37,17 +51,44 @@ for (const d of res.week.days) {
       continue;
     }
     const plates = platesForDay(rev, d.template, which, m, foods, members)!;
-    const her = plates.members[0]!.lines.map((l) => `${foods.get(l.foodId)!.nameIt} ${l.display}`).join(' · ');
-    const dish = m.dishId ? dishes.get(m.dishId)?.titleEn : '(no dish)';
-    console.log(`  ${which}: ${dish}${m.leftoverOf ? ' [leftover]' : ''}${m.batchId ? ' [cooks batch]' : ''}\n     ${her} · veg: ${m.veg.join(', ')}`);
+    const her = plates.members[0]!.lines.map((l) => `${foods.get(l.foodId)!.nameIt} ${l.display}`).join(
+      ' · ',
+    );
+    const d0 = m.dishId ? dishes.get(m.dishId) : undefined;
+    const dish = d0
+      ? dishTitle(
+          d0,
+          foods,
+          plates.members[0]!.lines.map((l) => ({ role: l.role, foodId: l.foodId })),
+        )
+      : '(no dish)';
+    console.log(
+      `  ${which}: ${dish}${m.leftoverOf ? ' [leftover]' : ''}${m.batchId ? ' [cooks batch]' : ''}\n     ${her} · veg: ${m.veg.join(', ')}`,
+    );
   }
 }
 console.log('\nRules:');
-for (const r of evaluateRules(res.week, rev, foods)) console.log(`  ${r.ok ? 'ok ' : 'BAD'} ${r.rule.label}: ${r.count}${r.rule.review ? ' (review)' : ''}`);
+for (const r of evaluateRules(res.week, rev, foods))
+  console.log(`  ${r.ok ? 'ok ' : 'BAD'} ${r.rule.label}: ${r.count}${r.rule.review ? ' (review)' : ''}`);
 console.log('\nNotes:', res.notes.length ? res.notes : 'none');
-const list = aggregateShopping({ week: res.week, rev, foods: FOODS, dishes: SEED_DISHES, members, batches: res.batches, pantry: {}, purchases: {}, manual: [], prefs, store: 'coop' });
+const list = aggregateShopping({
+  week: res.week,
+  rev,
+  foods: FOODS,
+  dishes: SEED_DISHES,
+  members,
+  batches: res.batches,
+  pantry: {},
+  purchases: {},
+  manual: [],
+  prefs,
+  store: 'coop',
+});
 console.log('\nShopping list:');
 for (const section of list.sections) {
   console.log(`  [${section.section}]`);
-  for (const it of section.items) console.log(`    ${foods.get(it.foodId)!.nameIt}: ${it.buy ? `${it.buy.n} × ${it.buy.unitLabel}` : `${Math.round(it.toBuyG)} g`}${it.estimate ? ' (estimate)' : ''}${it.run === 'fresh' ? ' [fresh run]' : ''}`);
+  for (const it of section.items)
+    console.log(
+      `    ${foods.get(it.foodId)!.nameIt}: ${it.buy ? `${it.buy.n} × ${it.buy.unitLabel}` : `${Math.round(it.toBuyG)} g`}${it.estimate ? ' (estimate)' : ''}${it.run === 'fresh' ? ' [fresh run]' : ''}`,
+    );
 }

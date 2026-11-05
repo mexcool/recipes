@@ -20,6 +20,7 @@ import { MAIN_MEALS, isLibero, mealTemplate, templateFor } from './model';
 import { checkWeek, type Violation } from './check';
 import { isWeekend } from './dates';
 import { foodMap, resolveMeal } from './resolve';
+import { dishTitle } from './title';
 import { pickDish, liberoMeal, emptyMeal, excludedFoods } from './planner';
 import { createRng } from './rng';
 import { historyFromWeeks } from './variety';
@@ -110,9 +111,13 @@ export function replaceDish(
   if (dishId) {
     const dish = ctx.dishes.find((d) => d.id === dishId);
     if (!dish) return { ok: false, reason: 'Unknown dish' };
-    const fit = dishFitsMeal(dish, mt, resolveMeal(meal, mt, foods), foods, which);
+    const lines = resolveMeal(meal, mt, foods);
+    const fit = dishFitsMeal(dish, mt, lines, foods, which);
     if (!fit.ok)
-      return { ok: false, reason: `${dish.titleEn} does not fit these foods: ${fit.reasons.join('; ')}` };
+      return {
+        ok: false,
+        reason: `${dishTitle(dish, foods, lines)} does not fit these foods: ${fit.reasons.join('; ')}`,
+      };
     meal.dishId = dishId;
     const excluded = excludedFoods(ctx.prefs, ctx.taste);
     const vegFromDish = dish.freeVeg.filter((v) => foods.get(v)?.isFreeVeg && !excluded.has(v));

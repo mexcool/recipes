@@ -20,7 +20,8 @@ import type {
 } from './model';
 import { MAIN_MEALS, mealTemplate, templateFor } from './model';
 import { weekdayIndex } from './dates';
-import { foodMap } from './resolve';
+import { foodMap, resolveMeal } from './resolve';
+import { dishTitle } from './title';
 import { resolvePlates } from './plates';
 import { toGrams } from './qty';
 import { inSeasonMonth } from './season';
@@ -186,6 +187,7 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
       if (!mt) continue;
       const dish = meal.dishId ? dishes.get(meal.dishId) : undefined;
       const plates = resolvePlates(meal, mt, rev, foods, members);
+      const title = dish ? dishTitle(dish, foods, resolveMeal(meal, mt, foods)) : undefined;
       const batch = meal.batchId ? input.batches.find((b) => b.id === meal.batchId) : undefined;
       for (const mp of plates.members) {
         const portions = batch?.portions.find((p) => p.memberId === mp.memberId)?.n ?? 1;
@@ -193,7 +195,7 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
           add(l.foodId, toGrams(l.qty, foods.get(l.foodId)) * portions, {
             date: day.date,
             meal: which,
-            dish: dish?.titleEn,
+            dish: title,
           });
         }
       }
@@ -207,7 +209,7 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
         ) || 1;
       const perVeg = vegIds.length ? (prefs.vegEstimateG * eatersWithPortions) / vegIds.length : 0;
       for (const v of vegIds)
-        add(v, Math.round(perVeg / 10) * 10, { date: day.date, meal: which, dish: dish?.titleEn }, true);
+        add(v, Math.round(perVeg / 10) * 10, { date: day.date, meal: which, dish: title }, true);
       // Non-staple condiments the dish calls for: a typical use per dish.
       for (const c of dish?.condiments ?? []) {
         const f = foods.get(c);
@@ -219,7 +221,7 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
             : f.purchaseUnits[0]
               ? Math.round(f.purchaseUnits[0].usableG / 4)
               : 0);
-        if (grams) add(c, grams, { date: day.date, meal: which, dish: dish?.titleEn }, true);
+        if (grams) add(c, grams, { date: day.date, meal: which, dish: title }, true);
       }
     }
   }

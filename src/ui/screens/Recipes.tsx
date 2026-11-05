@@ -3,6 +3,7 @@ import { Clock, Plus, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Dish, TasteEntry } from '@/core/model';
 import { validateDish } from '@/core/validate';
+import { dishTitles } from '@/core/title';
 import { useHousehold } from '@/store/store';
 import { ctxOf, type Ctx } from '@/store/selectors';
 import { t } from '@/i18n/en';
@@ -137,6 +138,7 @@ export function RecipesScreen() {
             {shown.map((d) => {
               const verdict = verdicts.get(d.id);
               const fit = verdict ? fitBadgeOf(verdict) : undefined;
+              const titles = dishTitles(d, ctx.foodMap);
               return (
                 <li key={d.id}>
                   <Link
@@ -146,10 +148,8 @@ export function RecipesScreen() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-[17px] leading-tight font-semibold text-ink">{d.titleEn}</p>
-                        {d.titleIt && d.titleIt !== d.titleEn && (
-                          <p className="mt-0.5 text-sm text-muted">{d.titleIt}</p>
-                        )}
+                        <p className="text-[17px] leading-tight font-semibold text-ink">{titles.en}</p>
+                        {titles.it && <p className="mt-0.5 text-sm text-muted">{titles.it}</p>}
                       </div>
                       <TasteMark taste={h.taste[`dish:${d.id}`]} className="shrink-0" />
                     </div>
@@ -193,7 +193,7 @@ function matchesFilter(d: Dish, filter: Filter, taste: TasteEntry | undefined): 
 
 /** Everything the search box can hit: both titles plus the names of the foods the dish uses. */
 function haystackOf(d: Dish, ctx: Ctx): string {
-  const parts: string[] = [d.titleEn, d.titleIt];
+  const parts: string[] = [d.titleEn, d.titleIt, ...Object.values(dishTitles(d, ctx.foodMap))];
   for (const b of d.bindings) {
     if (b.foods === 'any_cereal') parts.push('any cereal');
     else if (b.foods === 'any_bread') parts.push('any bread');

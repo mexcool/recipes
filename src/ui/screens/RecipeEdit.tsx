@@ -321,7 +321,11 @@ export function RecipeEditScreen() {
       )}
 
       <Card className="space-y-4">
-        <Field label={t.recipes.titleEn} htmlFor="dish-title-en">
+        <Field
+          label={t.recipes.titleEn}
+          htmlFor="dish-title-en"
+          hint="Name a food or write {{cereal}}, {{bread}} or {{protein}}: the title then shows the food chosen for the meal."
+        >
           <input
             id="dish-title-en"
             className={INPUT}

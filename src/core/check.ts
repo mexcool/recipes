@@ -10,6 +10,7 @@ import { ChoiceError, resolveMeal, slotHasFreeOption } from './resolve';
 import { evaluateRules } from './frequency';
 import { dishFitsMeal } from './dishfit';
 import { sameLines } from './batches';
+import { dishTitle } from './title';
 
 export type ViolationCode =
   | 'days'
@@ -201,7 +202,7 @@ export function checkWeek(
             if (!fit.ok)
               v.push({
                 code: 'dish_mismatch',
-                message: `${dish.titleEn}: ${fit.reasons.join('; ')}`,
+                message: `${dishTitle(dish, foods, lines)}: ${fit.reasons.join('; ')}`,
                 date: d.date,
                 meal: which,
               });

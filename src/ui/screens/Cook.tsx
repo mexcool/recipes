@@ -3,6 +3,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { MainMeal } from '@/core/model';
 import { mealTemplate, templateFor } from '@/core/model';
+import { dishTitles } from '@/core/title';
 import { useHousehold } from '@/store/store';
 import { useNow } from '@/store/now';
 import { actions } from '@/store/actions';
@@ -48,6 +49,7 @@ export function CookScreen() {
     })
     .filter((x): x is NonNullable<typeof x> => !!x);
   const isToday = date === now.date;
+  const titles = dish ? dishTitles(dish, ctx.foodMap, lines) : undefined;
 
   return (
     <div className="space-y-4">
@@ -57,8 +59,8 @@ export function CookScreen() {
           <p className="text-xs uppercase tracking-wide text-muted">
             {t.meals[meal]} · {date}
           </p>
-          <h1 className="text-2xl font-semibold leading-tight">{dish ? dish.titleEn : t.tonight.noDish}</h1>
-          {dish && <p className="text-sm text-muted">{dish.titleIt}</p>}
+          <h1 className="text-2xl font-semibold leading-tight">{titles ? titles.en : t.tonight.noDish}</h1>
+          {titles?.it && <p className="text-sm text-muted">{titles.it}</p>}
         </div>
       </div>
 
