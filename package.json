@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.scripts.json --noEmit && tsc -p worker/tsconfig.json --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -17,7 +17,11 @@
     "test:e2e": "playwright test",
     "week": "tsx --tsconfig tsconfig.scripts.json scripts/print-week.ts",
     "plans": "tsx --tsconfig tsconfig.scripts.json scripts/make-plans.ts",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml --local --port 8787",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
+    "worker:migrate": "wrangler d1 migrations apply stasera --config worker/wrangler.toml --remote",
+    "worker:migrate:local": "wrangler d1 migrations apply stasera --config worker/wrangler.toml --local"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.46",
@@ -30,6 +34,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261104.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.4",
@@ -46,6 +51,7 @@
     "fake-indexeddb": "6.2.7",
     "fast-check": "4.10.2",
     "globals": "17.14.0",
+    "hono": "4.13.16",
     "jsdom": "30.1.3",
     "prettier": "3.9.10",
     "tailwindcss": "4.3.4",
@@ -55,7 +61,8 @@
     "vite": "8.3.5",
     "vite-plugin-pwa": "2.0.0",
     "vitest": "5.1.0",
-    "workbox-window": "7.4.1"
+    "workbox-window": "7.4.1",
+    "wrangler": "4.157.0"
   },
   "engines": {
     "node": ">=22"

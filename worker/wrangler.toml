@@ -1,0 +1,13 @@
+name = "stasera-sync"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stasera"
+database_id = "replace-with-your-d1-id"   # created by `wrangler d1 create stasera`
+migrations_dir = "migrations"
+
+[observability]
+enabled = true

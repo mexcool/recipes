@@ -2,7 +2,7 @@
  * Every user action, as a function over the household store. Each applies a pure core function and
  * stores the result; failures are returned as { ok: false, reason } for the UI to show.
  */
-import type { Dish, Household, MainMeal, ManualItem, Member, Plan, PlanRevision, Prefs, Question, SlotOption, Week } from '@/core/model';
+import type { Batch, Dish, Household, MainMeal, ManualItem, Member, Plan, PlanRevision, Prefs, Purchase, Question, SlotOption, Week } from '@/core/model';
 import { PlanSchema, activePlan, activeRevision } from '@/core/model';
 import { addDays, mondayOf } from '@/core/dates';
 import { generateWeek, seedFor } from '@/core/planner';
@@ -14,6 +14,7 @@ import { exportHousehold, importHousehold } from '@/core/household';
 import { ctxOf, shoppingFor, weekFor } from './selectors';
 import { store } from './store';
 import { currentNow } from './now';
+import { queueCheck } from './sync';
 
 export type ActionResult = { ok: true; warnings?: string[] } | { ok: false; reason: string; violations?: string[] };
 
@@ -39,7 +40,7 @@ function ctxFor(h: Household, week: Week, now: Now): MutationContext {
   };
 }
 
-function putWeek(h: Household, week: Week, batches?: readonly import('@/core/model').Batch[]): Household {
+function putWeek(h: Household, week: Week, batches?: readonly Batch[]): Household {
   const weeks = h.weeks.some((w) => w.id === week.id) ? h.weeks.map((w) => (w.id === week.id ? week : w)) : [...h.weeks, week];
   const otherBatches = batches ? h.batches.filter((b) => b.weekId !== week.id) : h.batches;
   return { ...h, weeks, batches: batches ? [...otherBatches, ...batches] : h.batches };
@@ -207,11 +208,13 @@ export const actions = {
   // Shopping
   // ------------------------------------------------------------------------------------------------
   checkItem(weekId: string, item: ShoppingItem, by = 'me'): void {
+    let op: Purchase | undefined;
     store.update((h) => {
       const weekPurchases = { ...(h.purchases[weekId] ?? {}) };
       const prev = weekPurchases[item.key];
       const at = new Date().toISOString();
-      weekPurchases[item.key] = purchaseForCheck(item, prev, by, at, newId('op'));
+      op = purchaseForCheck(item, prev, by, at, newId('op'));
+      weekPurchases[item.key] = op;
       // Shelf-stable leftovers from pack rounding become pantry stock (editable in Settings).
       const pantry = { ...h.pantry };
       if (item.buy && item.buy.leftoverG > 0 && SHELF_STABLE_SECTIONS.has(item.section)) {
@@ -219,12 +222,15 @@ export const actions = {
       }
       return { ...h, purchases: { ...h.purchases, [weekId]: weekPurchases }, pantry };
     });
+    if (op) void queueCheck({ opId: op.opId, weekId, key: item.key, checked: true, coveredG: op.coveredG, by: op.by, at: op.at, rev: op.rev });
   },
 
-  uncheckItem(weekId: string, item: ShoppingItem): void {
+  uncheckItem(weekId: string, item: ShoppingItem, by = 'me'): void {
+    let prevOp: Purchase | undefined;
     store.update((h) => {
       const weekPurchases = { ...(h.purchases[weekId] ?? {}) };
       const prev = weekPurchases[item.key];
+      prevOp = prev;
       delete weekPurchases[item.key];
       const pantry = { ...h.pantry };
       if (prev && item.buy && item.buy.leftoverG > 0 && SHELF_STABLE_SECTIONS.has(item.section)) {
@@ -232,6 +238,7 @@ export const actions = {
       }
       return { ...h, purchases: { ...h.purchases, [weekId]: weekPurchases }, pantry };
     });
+    void queueCheck({ opId: newId('op'), weekId, key: item.key, checked: false, coveredG: 0, by, at: new Date().toISOString(), rev: (prevOp?.rev ?? 0) + 1 });
   },
 
   setPantry(foodId: string, grams: number): void {

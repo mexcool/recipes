@@ -60,8 +60,10 @@ export class HouseholdStore {
   getSnapshot = (): Household | null => this.doc;
 
   update(fn: (h: Household) => Household): Household {
-    const next = fn(this.get());
+    const prev = this.get();
+    const next = fn(prev);
     this.doc = { ...next, updatedAt: new Date().toISOString() };
+    if (next.sync && docChanged(prev, next)) void db.kv.put({ key: 'sync.dirty', value: true, updatedAt: this.doc.updatedAt });
     this.emit();
     this.scheduleSave();
     return this.doc;
@@ -110,6 +112,15 @@ export class HouseholdStore {
     await this.persist();
     this.emit();
   }
+}
+
+/** Anything but purchases (which travel as operations) and the sync config itself counts as a document change. */
+function docChanged(a: Household, b: Household): boolean {
+  for (const k of Object.keys(b) as (keyof Household)[]) {
+    if (k === 'purchases' || k === 'sync' || k === 'updatedAt') continue;
+    if (a[k] !== b[k]) return true;
+  }
+  return false;
 }
 
 export const store = new HouseholdStore();
