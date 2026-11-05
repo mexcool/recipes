@@ -2,7 +2,11 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "types": [
-      "node"
+      "node",
+      "vite/client",
+      "vite-plugin-pwa/client",
+      "vitest/globals",
+      "@testing-library/jest-dom"
     ],
     "lib": [
       "ES2023",

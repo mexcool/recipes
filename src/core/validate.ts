@@ -15,6 +15,8 @@ export interface FitMatch {
   foodId: string;
   label: string;
   isReference: boolean;
+  /** Matched through an "any cereal"-style option rather than a food named on the sheet. */
+  viaWildcard: boolean;
 }
 
 export interface FitIssue {
@@ -57,8 +59,8 @@ function bindingFoods(b: DishBinding, foods: readonly Food[]): Food[] {
   if (b.foods === 'any') return [...foods];
   if (b.foods === 'any_cereal') return foods.filter((f) => f.subgroup === 'cereal');
   if (b.foods === 'any_bread') return foods.filter((f) => f.subgroup === 'bread' || f.subgroup === 'bread_sub' || f.subgroup === 'tuber');
-  const ids = new Set(b.foods);
-  return foods.filter((f) => ids.has(f.id));
+  // Keep the dish's own order: its first food is its first choice.
+  return b.foods.map((id) => foods.find((f) => f.id === id)).filter((f): f is Food => !!f);
 }
 
 function optionLabel(opt: SlotOption, food: Food | undefined): string {
@@ -104,13 +106,15 @@ export function validateDish(dish: Dish, rev: PlanRevision, foodList: readonly F
         if (b.role === 'veg') continue;
         const bf = bindingFoods(b, foodList);
         let found: FitMatch | undefined;
+        // Prefer the dish's own first-choice food, then the slot's reference option.
         for (const s of mt.slots) {
           if (s.role !== b.role || usedSlots.has(s.id)) continue;
-          for (let i = 0; i < s.options.length && !found; i++) {
-            const opt = s.options[i]!;
-            const cands = optionCandidates(opt, foodList).filter((f) => bf.some((x) => x.id === f.id));
-            const pick = cands[0];
-            if (pick) found = { role: b.role, slotId: s.id, optionIndex: i, foodId: pick.id, label: optionLabel(opt, pick), isReference: i === 0 };
+          for (const food of bf) {
+            const i = s.options.findIndex((opt) => optionCandidates(opt, foodList).some((f) => f.id === food.id));
+            if (i >= 0) {
+              found = { role: b.role, slotId: s.id, optionIndex: i, foodId: food.id, label: optionLabel(s.options[i]!, food), isReference: i === 0, viaWildcard: s.options[i]!.kind === 'subgroup' };
+              break;
+            }
           }
           if (found) break;
         }
@@ -144,7 +148,8 @@ export function validateDish(dish: Dish, rev: PlanRevision, foodList: readonly F
       }
       const errors = issues.filter((i) => i.level === 'error').length;
       const complete = unfilled.length === 0 && foreign.length === 0 && errors === 0;
-      const score = (complete ? 100 : 0) - errors * 10 - foreign.length * 5 - issues.filter((i) => i.level === 'warning').length + matches.filter((m) => m.isReference).length;
+      const score =
+        (complete ? 100 : 0) - errors * 10 - foreign.length * 5 - issues.filter((i) => i.level === 'warning').length + matches.filter((m) => m.isReference).length + matches.filter((m) => !m.viaWildcard).length * 2;
       fits.push({ template: t.n, meal: which, ...(t.hint ? { hint: t.hint } : {}), matches, unfilled, foreign, exchangeFallbacks, issues, complete, score });
     }
   }

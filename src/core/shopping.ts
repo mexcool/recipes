@@ -72,6 +72,24 @@ interface Demand {
   firstNeeded: string;
 }
 
+/**
+ * Pure reconciliation: demand − pantry (deducted once) − what checked purchases already cover = to buy,
+ * rounded up to the pack. 900 g needed, 100 g in the pantry, 500 g packs → 2 packs, 200 g left over.
+ */
+export function reconcile(demandG: number, pantryG: number, coveredG: number, unit?: Food['purchaseUnits'][number]) {
+  const pantryDeductedG = Math.min(demandG, Math.max(0, pantryG));
+  const purchasedCoveredG = Math.max(0, coveredG);
+  const toBuyG = Math.max(0, demandG - pantryDeductedG - purchasedCoveredG);
+  const buy =
+    unit && toBuyG > 0
+      ? (() => {
+          const n = Math.ceil(toBuyG / unit.usableG);
+          return { n, unitLabel: unit.label, unitUsableG: unit.usableG, leftoverG: n * unit.usableG - toBuyG };
+        })()
+      : undefined;
+  return { pantryDeductedG, purchasedCoveredG, toBuyG, buy };
+}
+
 export const DEFAULT_STORE_ORDER: StoreSection[] = ['produce', 'bakery', 'meat', 'deli', 'dairy', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks', 'frozen', 'drinks'];
 
 const FRESH_SUBGROUPS = new Set<Food['subgroup']>(['bread', 'veg', 'veg_sugary', 'cheese_fresh']);
@@ -147,13 +165,7 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
       continue;
     }
     const unit = f.purchaseUnits[0];
-    const pantryDeductedG = Math.min(d.grams, input.pantry[foodId] ?? 0);
-    const purchasedCoveredG = input.purchases[foodId]?.coveredG ?? 0;
-    const toBuyG = Math.max(0, d.grams - pantryDeductedG - purchasedCoveredG);
-    const buy = unit && toBuyG > 0 ? (() => {
-      const n = Math.ceil(toBuyG / unit.usableG);
-      return { n, unitLabel: unit.label, unitUsableG: unit.usableG, leftoverG: n * unit.usableG - toBuyG };
-    })() : undefined;
+    const { pantryDeductedG, purchasedCoveredG, toBuyG, buy } = reconcile(d.grams, input.pantry[foodId] ?? 0, input.purchases[foodId]?.coveredG ?? 0, unit);
     const pieces = !unit && f.pieceG ? Math.ceil(toBuyG / f.pieceG) : undefined;
     const fresh = prefs.splitFreshRun && FRESH_SUBGROUPS.has(f.subgroup) && weekdayIndex(d.firstNeeded) >= 3;
     items.push({

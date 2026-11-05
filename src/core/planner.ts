@@ -356,8 +356,12 @@ function chooseOptions(
       return true;
     }
     const d = decisions[k]!;
-    for (const p of d.picks) {
-      const foodId = p.foodId ?? (d.slot.options[p.optionIndex] as { foodId: string }).foodId;
+    // Strongly disprefer a food already chosen for a main meal this week (variety); still possible when a rule needs it.
+    const foodOf = (p: Decision['picks'][number]) => p.foodId ?? (d.slot.options[p.optionIndex] as { foodId: string }).foodId;
+    const usedThisWeek = new Set(occ.filter((o) => o.meal === 'pranzo' || o.meal === 'cena').map((o) => o.foodId));
+    const picks = [...d.picks].sort((a, b) => b.score * (usedThisWeek.has(foodOf(b)) ? 0.2 : 1) - a.score * (usedThisWeek.has(foodOf(a)) ? 0.2 : 1));
+    for (const p of picks) {
+      const foodId = foodOf(p);
       const f = foods.get(foodId);
       const units = (() => {
         const o = d.slot.options[p.optionIndex]!;
