@@ -1,1 +1,133 @@
 @import 'tailwindcss';
+
+/* Stasera design tokens: warm cream, dark ink, restrained olive; terracotta for attention. */
+@theme {
+  --color-cream: #f6f1e7;
+  --color-cream-2: #efe8da;
+  --color-surface: #fffdf8;
+  --color-surface-2: #f3eee3;
+  --color-ink: #1f1a14;
+  --color-ink-2: #4a4238;
+  --color-muted: #7a7264;
+  --color-line: #e4dccc;
+  --color-olive: #5b6b3a;
+  --color-olive-2: #44512b;
+  --color-olive-soft: #e6ebd8;
+  --color-terra: #c2643c;
+  --color-terra-soft: #f6e4da;
+  --color-ok: #3f7d4e;
+  --color-ok-soft: #dff0e2;
+  --color-warn: #a86b1a;
+  --color-warn-soft: #f8ead3;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(31 26 20 / 0.05), 0 8px 24px -12px rgb(31 26 20 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-cream: #17150f;
+    --color-cream-2: #1f1c15;
+    --color-surface: #221f18;
+    --color-surface-2: #2a261e;
+    --color-ink: #f1ebdf;
+    --color-ink-2: #cfc6b5;
+    --color-muted: #9b927f;
+    --color-line: #3a3428;
+    --color-olive: #9db36f;
+    --color-olive-2: #b9cd8c;
+    --color-olive-soft: #2d3322;
+    --color-terra: #e2865e;
+    --color-terra-soft: #3d2a21;
+    --color-ok: #7cc08a;
+    --color-ok-soft: #22331f;
+    --color-warn: #e0a85a;
+    --color-warn-soft: #3a2f1c;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-cream: #17150f;
+  --color-cream-2: #1f1c15;
+  --color-surface: #221f18;
+  --color-surface-2: #2a261e;
+  --color-ink: #f1ebdf;
+  --color-ink-2: #cfc6b5;
+  --color-muted: #9b927f;
+  --color-line: #3a3428;
+  --color-olive: #9db36f;
+  --color-olive-2: #b9cd8c;
+  --color-olive-soft: #2d3322;
+  --color-terra: #e2865e;
+  --color-terra-soft: #3d2a21;
+  --color-ok: #7cc08a;
+  --color-ok-soft: #22331f;
+  --color-warn: #e0a85a;
+  --color-warn-soft: #3a2f1c;
+}
+
+@layer base {
+  html {
+    background: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-cream);
+    overscroll-behavior-y: none;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-olive);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .tap {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-line);
+  }
+  .sheet-enter {
+    animation: sheet-up 180ms ease-out;
+  }
+  @keyframes sheet-up {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}

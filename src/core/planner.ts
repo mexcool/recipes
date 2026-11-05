@@ -132,6 +132,7 @@ export function generateWeek(input: PlannerInput): PlannerResult {
     days,
     generatedAt: input.generatedAt ?? `${input.monday}T00:00:00.000Z`,
     confirmed: false,
+    pantryApplied: false,
   };
 
   // --- 5. Batches --------------------------------------------------------------------------------
@@ -284,7 +285,7 @@ function assignFixedMenus(days: Day[], input: PlannerInput, rnd: () => number): 
 }
 
 function emptyWeek(input: PlannerInput): Omit<Week, 'days'> {
-  return { id: 'tmp', planId: input.planId, revision: input.rev.revision, monday: input.monday, seed: input.seed, generatedAt: '', confirmed: false };
+  return { id: 'tmp', planId: input.planId, revision: input.rev.revision, monday: input.monday, seed: input.seed, generatedAt: '', confirmed: false, pantryApplied: false };
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -336,6 +336,8 @@ export const WeekSchema = z.object({
   days: z.array(DaySchema).length(7),
   generatedAt: z.string(),
   confirmed: z.boolean().default(false),
+  /** Pantry stock used by this week has been subtracted (done once when the next week starts). */
+  pantryApplied: z.boolean().default(false),
 });
 export type Week = z.infer<typeof WeekSchema>;
 
