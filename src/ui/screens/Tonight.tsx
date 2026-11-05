@@ -39,7 +39,13 @@ export function TonightScreen() {
           body="Stasera drafts a whole week from your plan: seven days, varied dishes, one shopping list."
           action={
             <div className="flex flex-col gap-2">
-              <Button variant="primary" size="lg" icon={<Sparkles size={18} />} disabled={busy} onClick={() => plan(isWeekend(now.date) && now.hour >= 12 ? nextMonday : thisMonday)}>
+              <Button
+                variant="primary"
+                size="lg"
+                icon={<Sparkles size={18} />}
+                disabled={busy}
+                onClick={() => plan(isWeekend(now.date) && now.hour >= 12 ? nextMonday : thisMonday)}
+              >
                 {t.tonight.planNow}
               </Button>
               {week && (
@@ -63,19 +69,41 @@ export function TonightScreen() {
   return (
     <div className="space-y-5">
       <Header now={now} />
-      <MealCard ctx={ctx} weekId={week.id} day={today} which={which} hero label={`${t.common.today} · ${t.meals[which]}`} />
-      {which === 'pranzo' && <MealCard ctx={ctx} weekId={week.id} day={today} which={other} label={`${t.common.today} · ${t.meals.cena}`} />}
+      <MealCard
+        ctx={ctx}
+        weekId={week.id}
+        day={today}
+        which={which}
+        hero
+        label={`${t.common.today} · ${t.meals[which]}`}
+      />
+      {which === 'pranzo' && (
+        <MealCard
+          ctx={ctx}
+          weekId={week.id}
+          day={today}
+          which={other}
+          label={`${t.common.today} · ${t.meals.cena}`}
+        />
+      )}
       {which === 'cena' && h.prefs.lunchbox && tomorrow && !isWeekend(tomorrow.date) && (
         <div>
           <SectionTitle>{t.tonight.tomorrowLunch}</SectionTitle>
-          <MealCard ctx={ctx} weekId={week.id} day={tomorrow} which="pranzo" label={`${t.common.tomorrow} · ${t.meals.pranzo} — ${t.tonight.lunchboxHint}`} />
+          <MealCard
+            ctx={ctx}
+            weekId={week.id}
+            day={tomorrow}
+            which="pranzo"
+            label={`${t.common.tomorrow} · ${t.meals.pranzo} — ${t.tonight.lunchboxHint}`}
+          />
         </div>
       )}
       <Card>
         <SectionTitle className="mb-1">{t.tonight.breakfast}</SectionTitle>
         <p className="text-ink-2">{breakfast?.label ?? '—'}</p>
         <p className="mt-2 text-sm text-muted">
-          {t.meals.spuntino}: {today.spuntino ? 'a portion of fruit' : t.tonight.noSnack} · {t.meals.merenda}: {merenda?.label ?? '—'}
+          {t.meals.spuntino}: {today.spuntino ? 'a portion of fruit' : t.tonight.noSnack} · {t.meals.merenda}:{' '}
+          {merenda?.label ?? '—'}
         </p>
       </Card>
       <Link to="/week" className="flex items-center justify-center gap-2 py-2 text-sm text-olive-2">

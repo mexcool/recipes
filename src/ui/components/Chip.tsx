@@ -1,7 +1,17 @@
 import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export function Chip({ selected, className, children, tone = 'neutral', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean; tone?: 'neutral' | 'olive' | 'terra' | 'ok' | 'warn'; children: ReactNode }) {
+export function Chip({
+  selected,
+  className,
+  children,
+  tone = 'neutral',
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  selected?: boolean;
+  tone?: 'neutral' | 'olive' | 'terra' | 'ok' | 'warn';
+  children: ReactNode;
+}) {
   const interactive = !!rest.onClick;
   return (
     <button
@@ -9,7 +19,9 @@ export function Chip({ selected, className, children, tone = 'neutral', ...rest 
       className={clsx(
         'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition',
         interactive ? 'tap active:scale-[0.98]' : 'cursor-default',
-        selected ? 'border-olive bg-olive text-white' : tone === 'neutral' && 'border-line bg-surface text-ink-2',
+        selected
+          ? 'border-olive bg-olive text-white'
+          : tone === 'neutral' && 'border-line bg-surface text-ink-2',
         !selected && tone === 'olive' && 'border-olive/30 bg-olive-soft text-olive-2',
         !selected && tone === 'terra' && 'border-terra/30 bg-terra-soft text-terra',
         !selected && tone === 'ok' && 'border-ok/30 bg-ok-soft text-ok',
@@ -24,7 +36,15 @@ export function Chip({ selected, className, children, tone = 'neutral', ...rest 
   );
 }
 
-export function Badge({ children, tone = 'neutral', className }: { children: ReactNode; tone?: 'neutral' | 'olive' | 'terra' | 'ok' | 'warn'; className?: string }) {
+export function Badge({
+  children,
+  tone = 'neutral',
+  className,
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'olive' | 'terra' | 'ok' | 'warn';
+  className?: string;
+}) {
   return (
     <span
       className={clsx(

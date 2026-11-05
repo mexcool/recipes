@@ -20,7 +20,11 @@ export function shuffle<T>(items: readonly T[], rnd: () => number): T[] {
 }
 
 /** Weighted pick among items with positive weights; weights ≤ 0 are floored to a tiny positive value. */
-export function weightedPick<T>(items: readonly T[], weights: readonly number[], rnd: () => number): T | undefined {
+export function weightedPick<T>(
+  items: readonly T[],
+  weights: readonly number[],
+  rnd: () => number,
+): T | undefined {
   if (items.length === 0) return undefined;
   const ws = weights.map((w) => (Number.isFinite(w) && w > 0 ? w : 1e-6));
   const total = ws.reduce((s, w) => s + w, 0);

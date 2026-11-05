@@ -2,7 +2,11 @@ import type { Food, Qty } from './model';
 
 export const g = (n: number): Qty => ({ kind: 'g', g: n });
 export const ml = (n: number): Qty => ({ kind: 'ml', ml: n });
-export const count = (n: number, unitG?: number): Qty => ({ kind: 'count', count: n, ...(unitG ? { unitG } : {}) });
+export const count = (n: number, unitG?: number): Qty => ({
+  kind: 'count',
+  count: n,
+  ...(unitG ? { unitG } : {}),
+});
 export const free: Qty = { kind: 'free' };
 
 /** Grams represented by a quantity (counts need unitG or the food's pieceG). */
@@ -19,16 +23,22 @@ export function toGrams(q: Qty, food?: Pick<Food, 'pieceG'>): number {
   }
 }
 
-/** Scale a quantity by a multiplier. Grams round to 5 g, millilitres to 10 ml, counts to a half. */
+/**
+ * Scale a quantity by a multiplier: grams to a 5 g grid below 100 g and 10 g above, millilitres to 10 ml,
+ * counts to whole pieces (never half an egg). A multiplier of 1 returns the quantity untouched.
+ */
 export function scaleQty(q: Qty, m: number): Qty {
   if (m === 1) return q;
   switch (q.kind) {
-    case 'g':
-      return { kind: 'g', g: Math.max(0, Math.round((q.g * m) / 5) * 5) };
+    case 'g': {
+      const raw = q.g * m;
+      const grid = raw >= 100 ? 10 : 5;
+      return { kind: 'g', g: Math.max(0, Math.round(raw / grid) * grid) };
+    }
     case 'ml':
       return { kind: 'ml', ml: Math.max(0, Math.round((q.ml * m) / 10) * 10) };
     case 'count':
-      return { ...q, count: Math.max(0, Math.round(q.count * m * 2) / 2) };
+      return { ...q, count: Math.max(q.count > 0 ? 1 : 0, Math.round(q.count * m)) };
     case 'free':
       return q;
   }

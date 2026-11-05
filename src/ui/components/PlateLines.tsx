@@ -4,7 +4,17 @@ import type { Ctx } from '@/store/selectors';
 import { t } from '@/i18n/en';
 
 /** Her plate, verbatim from the plan; the partner's, scaled. Oil shown as the meal allowance. */
-export function PlateLines({ plates, ctx, memberId, compact = false }: { plates: Plates; ctx: Ctx; memberId: string; compact?: boolean }) {
+export function PlateLines({
+  plates,
+  ctx,
+  memberId,
+  compact = false,
+}: {
+  plates: Plates;
+  ctx: Ctx;
+  memberId: string;
+  compact?: boolean;
+}) {
   const mp = plates.members.find((m) => m.memberId === memberId);
   if (!mp) return null;
   return (
@@ -20,7 +30,12 @@ export function PlateLines({ plates, ctx, memberId, compact = false }: { plates:
             </span>
             <span className="shrink-0 font-medium tabular-nums">
               {l.display}
-              {l.cookedG && <span className="text-muted"> ≈ {l.cookedG} g {t.common.cooked}</span>}
+              {l.cookedG && (
+                <span className="text-muted">
+                  {' '}
+                  ≈ {l.cookedG} g {t.common.cooked}
+                </span>
+              )}
             </span>
           </li>
         );
@@ -60,7 +75,13 @@ export function PlatesTable({ plates, ctx }: { plates: Plates; ctx: Ctx }) {
               );
             })}
             <td className="py-1.5 text-right font-medium tabular-nums">
-              {p.grams} g{p.cookedG ? <span className="text-muted"> ≈ {p.cookedG} g {t.common.cooked}</span> : null}
+              {p.grams} g
+              {p.cookedG ? (
+                <span className="text-muted">
+                  {' '}
+                  ≈ {p.cookedG} g {t.common.cooked}
+                </span>
+              ) : null}
             </td>
           </tr>
         ))}

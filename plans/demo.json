@@ -478,7 +478,8 @@
             "scope": "main_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": false
+            "review": false,
+            "enforce": true
           },
           {
             "id": "cheese",
@@ -495,7 +496,8 @@
             "scope": "main_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": true
+            "review": true,
+            "enforce": true
           },
           {
             "id": "eggs",
@@ -512,7 +514,8 @@
             "scope": "all_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": false
+            "review": false,
+            "enforce": true
           },
           {
             "id": "red_meat",
@@ -528,7 +531,8 @@
             "scope": "main_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": false
+            "review": false,
+            "enforce": true
           },
           {
             "id": "white_meat",
@@ -544,7 +548,8 @@
             "scope": "main_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": false
+            "review": false,
+            "enforce": true
           },
           {
             "id": "tubers",
@@ -561,7 +566,8 @@
             "scope": "main_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": false
+            "review": false,
+            "enforce": true
           },
           {
             "id": "cured",
@@ -577,7 +583,8 @@
             "scope": "main_meals",
             "garnishExempt": true,
             "source": "plan",
-            "review": true
+            "review": true,
+            "enforce": false
           }
         ]
       },

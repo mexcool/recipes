@@ -19,7 +19,11 @@ export const SCHEMA_VERSION = 1;
 export const QtySchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('g'), g: z.number().int().nonnegative() }),
   z.object({ kind: z.literal('ml'), ml: z.number().int().nonnegative() }),
-  z.object({ kind: z.literal('count'), count: z.number().nonnegative(), unitG: z.number().positive().optional() }),
+  z.object({
+    kind: z.literal('count'),
+    count: z.number().nonnegative(),
+    unitG: z.number().positive().optional(),
+  }),
   z.object({ kind: z.literal('free') }),
 ]);
 export type Qty = z.infer<typeof QtySchema>;
@@ -29,16 +33,50 @@ export type Qty = z.infer<typeof QtySchema>;
 // ---------------------------------------------------------------------------------------------
 
 export const SUBGROUPS = [
-  'cereal', 'bread', 'bread_sub', 'tuber', 'fresh_pasta', 'legume_dry', 'legume_canned', 'tofu', 'veg_burger',
-  'cheese_fresh', 'cheese_aged', 'meat_white', 'meat_red', 'cured', 'egg', 'yogurt', 'dairy', 'fruit', 'oil',
-  'veg', 'veg_sugary', 'frozen_soup', 'condiment', 'snack', 'sweet', 'nut', 'drink',
+  'cereal',
+  'breakfast_cereal',
+  'bread',
+  'bread_sub',
+  'tuber',
+  'fresh_pasta',
+  'legume_dry',
+  'legume_canned',
+  'tofu',
+  'veg_burger',
+  'cheese_fresh',
+  'cheese_aged',
+  'meat_white',
+  'meat_red',
+  'cured',
+  'egg',
+  'yogurt',
+  'dairy',
+  'fruit',
+  'oil',
+  'veg',
+  'veg_sugary',
+  'frozen_soup',
+  'condiment',
+  'snack',
+  'sweet',
+  'nut',
+  'drink',
 ] as const;
 export const SubgroupSchema = z.enum(SUBGROUPS);
 export type Subgroup = z.infer<typeof SubgroupSchema>;
 
 export const STORE_SECTIONS = [
-  'produce', 'bakery', 'meat', 'deli', 'dairy', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks',
-  'frozen', 'drinks',
+  'produce',
+  'bakery',
+  'meat',
+  'deli',
+  'dairy',
+  'pasta_grains',
+  'canned',
+  'oils_condiments',
+  'breakfast_snacks',
+  'frozen',
+  'drinks',
 ] as const;
 export const StoreSectionSchema = z.enum(STORE_SECTIONS);
 export type StoreSection = z.infer<typeof StoreSectionSchema>;
@@ -73,6 +111,8 @@ export const FoodSchema = z.object({
   cookedFactor: z.number().positive().optional(),
   /** Grams per piece for count-based foods (an egg ≈ 60 g). */
   pieceG: z.number().positive().optional(),
+  /** Typical grams used by one dish for a condiment (a quarter lemon), for shopping estimates. */
+  useG: z.number().positive().optional(),
   purchaseUnits: z.array(PurchaseUnitSchema).default([]),
   section: StoreSectionSchema,
   /** Pantry staple: listed only when flagged "running low". */
@@ -95,7 +135,12 @@ export type Role = z.infer<typeof RoleSchema>;
 
 export const SlotOptionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('food'), foodId: z.string(), qty: QtySchema, label: z.string().optional() }),
-  z.object({ kind: z.literal('subgroup'), subgroup: SubgroupSchema, qty: QtySchema, label: z.string().optional() }),
+  z.object({
+    kind: z.literal('subgroup'),
+    subgroup: SubgroupSchema,
+    qty: QtySchema,
+    label: z.string().optional(),
+  }),
   z.object({ kind: z.literal('free') }),
 ]);
 export type SlotOption = z.infer<typeof SlotOptionSchema>;
@@ -141,7 +186,10 @@ export type ExchangeList = z.infer<typeof ExchangeListSchema>;
 export const FrequencyRuleSchema = z.object({
   id: z.string(),
   label: z.string(),
-  subject: z.union([z.object({ subgroups: z.array(SubgroupSchema) }), z.object({ foodIds: z.array(z.string()) })]),
+  subject: z.union([
+    z.object({ subgroups: z.array(SubgroupSchema) }),
+    z.object({ foodIds: z.array(z.string()) }),
+  ]),
   per: z.enum(['week', 'day']),
   min: z.number().int().nonnegative().optional(),
   max: z.number().int().nonnegative().optional(),
@@ -154,6 +202,8 @@ export const FrequencyRuleSchema = z.object({
   source: z.string(),
   /** The sheet's wording is ambiguous: show the count, flag for review. */
   review: z.boolean().default(false),
+  /** Enforced by the planner and the checker (false = informational count only). */
+  enforce: z.boolean().default(true),
 });
 export type FrequencyRule = z.infer<typeof FrequencyRuleSchema>;
 
@@ -274,7 +324,9 @@ export const DishSchema = z.object({
   minutes: z.number().int().positive(),
   lunchboxOk: z.boolean().default(false),
   mealTypes: z.array(z.enum(['pranzo', 'cena'])).default(['pranzo', 'cena']),
-  batchable: z.object({ portionsMax: z.number().int().min(2), keepsDays: z.number().int().min(1) }).optional(),
+  batchable: z
+    .object({ portionsMax: z.number().int().min(2), keepsDays: z.number().int().min(1) })
+    .optional(),
   /** Steps with {{role}} placeholders; never contain quantities. */
   steps: z.array(z.string()),
   origin: z.enum(['seed', 'user', 'llm', 'import']).default('seed'),
@@ -355,7 +407,13 @@ export const BatchSchema = z.object({
 });
 export type Batch = z.infer<typeof BatchSchema>;
 
-export const PurchaseSchema = z.object({ coveredG: z.number().nonnegative(), at: z.string(), by: z.string(), opId: z.string(), rev: z.number().int() });
+export const PurchaseSchema = z.object({
+  coveredG: z.number().nonnegative(),
+  at: z.string(),
+  by: z.string(),
+  opId: z.string(),
+  rev: z.number().int(),
+});
 export type Purchase = z.infer<typeof PurchaseSchema>;
 
 export const ManualItemSchema = z.object({
@@ -367,7 +425,11 @@ export const ManualItemSchema = z.object({
 });
 export type ManualItem = z.infer<typeof ManualItemSchema>;
 
-export const TasteEntrySchema = z.object({ score: z.number(), lastEaten: z.string().optional(), hard: z.enum(['never']).optional() });
+export const TasteEntrySchema = z.object({
+  score: z.number(),
+  lastEaten: z.string().optional(),
+  hard: z.enum(['never']).optional(),
+});
 export type TasteEntry = z.infer<typeof TasteEntrySchema>;
 
 export const QuestionSchema = z.object({
@@ -387,6 +449,8 @@ export const PrefsSchema = z.object({
   maxMinutesWeekdayDinner: z.number().int().positive().default(35),
   vegEstimateG: z.number().int().positive().default(150),
   splitFreshRun: z.boolean().default(true),
+  /** Plan one cooked-once batch a week when a dish keeps well. */
+  cookDouble: z.boolean().default(true),
   runningLow: z.array(z.string()).default([]),
   /** Food ids she wants more or less often. */
   preferMore: z.array(z.string()).default([]),
@@ -394,7 +458,11 @@ export const PrefsSchema = z.object({
 });
 export type Prefs = z.infer<typeof PrefsSchema>;
 
-export const SyncConfigSchema = z.object({ serviceUrl: z.string(), token: z.string(), lastVersion: z.number().int().default(0) });
+export const SyncConfigSchema = z.object({
+  serviceUrl: z.string(),
+  token: z.string(),
+  lastVersion: z.number().int().default(0),
+});
 
 export const HouseholdSchema = z.object({
   schemaVersion: z.number().int(),

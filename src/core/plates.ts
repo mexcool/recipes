@@ -59,7 +59,14 @@ function singular(name: string): string {
 
 function lineFor(food: Food, role: LineRole, qty: Qty, slotId?: string): PlateLine {
   const cooked = cookedEstimate(qty, food);
-  return { foodId: food.id, role, qty, display: displayFor(food, qty), ...(cooked ? { cookedG: cooked } : {}), ...(slotId ? { slotId } : {}) };
+  return {
+    foodId: food.id,
+    role,
+    qty,
+    display: displayFor(food, qty),
+    ...(cooked ? { cookedG: cooked } : {}),
+    ...(slotId ? { slotId } : {}),
+  };
 }
 
 /**
@@ -91,7 +98,14 @@ export function resolvePlates(
     out.push({
       memberId: m.id,
       multiplier: mult,
-      lines: base.map((l) => lineFor(mustFood(foods, l.foodId), l.role, scaleQty(l.qty, mult), l.slotId)),
+      lines: base.map((l) =>
+        lineFor(
+          mustFood(foods, l.foodId),
+          l.role,
+          l.role === 'topping' ? l.qty : scaleQty(l.qty, mult),
+          l.slotId,
+        ),
+      ),
     });
   }
   if (!constrained && out.length === 0) out.push({ memberId: 'anyone', multiplier: 1, lines: base });
@@ -115,7 +129,14 @@ export function resolvePlates(
   return { members: out, pot: [...pot.values()] };
 }
 
-export function platesForDay(rev: PlanRevision, templateN: number, which: MainMeal, meal: Meal, foods: ReadonlyMap<string, Food>, members: readonly Member[]): Plates | null {
+export function platesForDay(
+  rev: PlanRevision,
+  templateN: number,
+  which: MainMeal,
+  meal: Meal,
+  foods: ReadonlyMap<string, Food>,
+  members: readonly Member[],
+): Plates | null {
   if (meal.kind !== 'planned') return null;
   const mt = mealTemplate(templateFor(rev, templateN), which);
   if (!mt) return null;

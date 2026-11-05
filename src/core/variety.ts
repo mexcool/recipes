@@ -50,12 +50,25 @@ export const AXIS_WEIGHT: Record<keyof typeof COOLDOWN_DAYS, number> = {
   flavour: 0.4,
 };
 
-export function signatureOf(meal: Meal, lines: { role: string; foodId: string }[], dish: Dish | undefined, foods: ReadonlyMap<string, Food>): Signature {
+export function signatureOf(
+  meal: Meal,
+  lines: { role: string; foodId: string }[],
+  dish: Dish | undefined,
+  foods: ReadonlyMap<string, Food>,
+): Signature {
   const protein = lines.find((l) => l.role === 'protein');
   const cereal = lines.find((l) => l.role === 'cereal');
   const bread = lines.find((l) => l.role === 'bread');
   return {
-    ...(dish ? { dishId: dish.id, format: dish.signature.format, temperature: dish.signature.temperature, flavour: dish.signature.flavour, method: dish.methods[0] } : {}),
+    ...(dish
+      ? {
+          dishId: dish.id,
+          format: dish.signature.format,
+          temperature: dish.signature.temperature,
+          flavour: dish.signature.flavour,
+          method: dish.methods[0],
+        }
+      : {}),
     ...(protein ? { proteinFood: protein.foodId, proteinSub: foods.get(protein.foodId)?.subgroup } : {}),
     ...(cereal ? { cerealFood: cereal.foodId } : {}),
     ...(bread ? { breadFood: bread.foodId } : {}),
@@ -63,7 +76,12 @@ export function signatureOf(meal: Meal, lines: { role: string; foodId: string }[
   };
 }
 
-export function historyFromWeeks(weeks: readonly Week[], rev: PlanRevision, foods: ReadonlyMap<string, Food>, dishes: ReadonlyMap<string, Dish>): HistoryEntry[] {
+export function historyFromWeeks(
+  weeks: readonly Week[],
+  rev: PlanRevision,
+  foods: ReadonlyMap<string, Food>,
+  dishes: ReadonlyMap<string, Dish>,
+): HistoryEntry[] {
   const out: HistoryEntry[] = [];
   for (const w of weeks) {
     for (const d of w.days) {
@@ -79,7 +97,11 @@ export function historyFromWeeks(weeks: readonly Week[], rev: PlanRevision, food
         } catch {
           lines = [];
         }
-        out.push({ date: d.date, which, sig: signatureOf(m, lines, m.dishId ? dishes.get(m.dishId) : undefined, foods) });
+        out.push({
+          date: d.date,
+          which,
+          sig: signatureOf(m, lines, m.dishId ? dishes.get(m.dishId) : undefined, foods),
+        });
       }
     }
   }
@@ -108,7 +130,13 @@ export function varietyFactor(sig: Signature, history: readonly HistoryEntry[], 
 export function daysSinceFood(foodId: string, history: readonly HistoryEntry[], date: string): number {
   let best = Infinity;
   for (const h of history) {
-    if (h.sig.proteinFood === foodId || h.sig.cerealFood === foodId || h.sig.breadFood === foodId || h.sig.veg === foodId || h.sig.vegs?.includes(foodId)) {
+    if (
+      h.sig.proteinFood === foodId ||
+      h.sig.cerealFood === foodId ||
+      h.sig.breadFood === foodId ||
+      h.sig.veg === foodId ||
+      h.sig.vegs?.includes(foodId)
+    ) {
       best = Math.min(best, Math.abs(diffDays(h.date, date)));
     }
   }
@@ -126,7 +154,11 @@ export function tasteFactor(taste: Record<string, TasteEntry>, keys: readonly st
   return f;
 }
 
-export function seasonFactor(vegIds: readonly string[], date: string, foods: ReadonlyMap<string, Food>): number {
+export function seasonFactor(
+  vegIds: readonly string[],
+  date: string,
+  foods: ReadonlyMap<string, Food>,
+): number {
   if (vegIds.length === 0) return 1;
   const m = monthOf(date);
   let inSeason = 0;
@@ -146,12 +178,30 @@ export const TASTE_SIGNALS = {
   notTonight: -0.5,
 } as const;
 
-export function applyTaste(taste: Record<string, TasteEntry>, key: string, delta: number, date: string, hard?: 'never'): Record<string, TasteEntry> {
+export function applyTaste(
+  taste: Record<string, TasteEntry>,
+  key: string,
+  delta: number,
+  date: string,
+  hard?: 'never',
+): Record<string, TasteEntry> {
   const prev = taste[key] ?? { score: 0 };
-  return { ...taste, [key]: { ...prev, score: Math.max(-6, Math.min(6, prev.score + delta)), lastEaten: date, ...(hard ? { hard } : {}) } };
+  return {
+    ...taste,
+    [key]: {
+      ...prev,
+      score: Math.max(-6, Math.min(6, prev.score + delta)),
+      lastEaten: date,
+      ...(hard ? { hard } : {}),
+    },
+  };
 }
 
-export function decayTaste(taste: Record<string, TasteEntry>, today: string, halfLifeDays = 90): Record<string, TasteEntry> {
+export function decayTaste(
+  taste: Record<string, TasteEntry>,
+  today: string,
+  halfLifeDays = 90,
+): Record<string, TasteEntry> {
   const out: Record<string, TasteEntry> = {};
   for (const [k, e] of Object.entries(taste)) {
     if (!e.lastEaten) {

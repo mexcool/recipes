@@ -10,7 +10,11 @@ export function Button({
   icon,
   size = 'md',
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; icon?: ReactNode; size?: 'sm' | 'md' | 'lg' }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: Variant;
+  icon?: ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+}) {
   return (
     <button
       type="button"

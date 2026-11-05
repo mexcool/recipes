@@ -2,8 +2,26 @@
 export const en = {
   app: { name: 'Stasera', tagline: "What's for dinner, to the gram." },
   tabs: { tonight: 'Tonight', week: 'Week', shopping: 'Shopping', recipes: 'Recipes', settings: 'Settings' },
-  meals: { pranzo: 'Lunch', cena: 'Dinner', colazione: 'Breakfast', spuntino: 'Morning snack', merenda: 'Afternoon snack', spuntino_serale: 'Evening snack' },
-  roles: { cereal: 'Grain', bread: 'Bread', protein: 'Protein', veg: 'Vegetables', soup: 'Soup', topping: 'Topping', oil: 'Oil', fat: 'Fat', fruit: 'Fruit', dairy: 'Dairy' },
+  meals: {
+    pranzo: 'Lunch',
+    cena: 'Dinner',
+    colazione: 'Breakfast',
+    spuntino: 'Morning snack',
+    merenda: 'Afternoon snack',
+    spuntino_serale: 'Evening snack',
+  },
+  roles: {
+    cereal: 'Grain',
+    bread: 'Bread',
+    protein: 'Protein',
+    veg: 'Vegetables',
+    soup: 'Soup',
+    topping: 'Topping',
+    oil: 'Oil',
+    fat: 'Fat',
+    fruit: 'Fruit',
+    dairy: 'Dairy',
+  },
   tonight: {
     noWeek: 'No plan for this week yet.',
     planNow: 'Plan this week',

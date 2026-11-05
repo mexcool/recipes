@@ -11,21 +11,34 @@ export function bindingAccepts(b: DishBinding, foodId: string, foods: ReadonlyMa
   const f = foods.get(foodId);
   if (!f) return false;
   if (b.foods === 'any_cereal') return f.subgroup === 'cereal';
-  if (b.foods === 'any_bread') return f.subgroup === 'bread' || f.subgroup === 'bread_sub' || f.subgroup === 'tuber';
+  if (b.foods === 'any_bread')
+    return f.subgroup === 'bread' || f.subgroup === 'bread_sub' || f.subgroup === 'tuber';
   return b.foods.includes(foodId);
 }
 
 /** Does a dish shape fit this meal as chosen: every binding matches a slot's food, every non-optional slot is covered. */
-export function dishFitsMeal(dish: Dish, mt: MealTemplate, lines: readonly ResolvedLine[], foods: ReadonlyMap<string, Food>, which: MainMeal): DishFit {
+export function dishFitsMeal(
+  dish: Dish,
+  mt: MealTemplate,
+  lines: readonly ResolvedLine[],
+  foods: ReadonlyMap<string, Food>,
+  which: MainMeal,
+): DishFit {
   const reasons: string[] = [];
   if (!dish.mealTypes.includes(which)) reasons.push(`not meant for ${which}`);
   const covered = new Set<string>();
   for (const b of dish.bindings) {
     if (b.role === 'veg') continue;
-    const line = lines.find((l) => l.role === b.role && !covered.has(l.slotId) && bindingAccepts(b, l.foodId, foods));
+    const line = lines.find(
+      (l) => l.role === b.role && !covered.has(l.slotId) && bindingAccepts(b, l.foodId, foods),
+    );
     if (!line) {
       const slotExists = mt.slots.some((s) => s.role === b.role);
-      reasons.push(slotExists ? `${b.role}: the chosen food does not suit this dish` : `${b.role}: this meal has no such slot`);
+      reasons.push(
+        slotExists
+          ? `${b.role}: the chosen food does not suit this dish`
+          : `${b.role}: this meal has no such slot`,
+      );
       continue;
     }
     covered.add(line.slotId);

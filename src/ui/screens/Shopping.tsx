@@ -56,7 +56,12 @@ function buyText(item: ShoppingItem, food: Food | undefined): string {
   if (item.haveIt) return 'already have';
   // Bought: reconstruct the packs from what the check recorded.
   const unit = food?.purchaseUnits[0];
-  if (unit && !unit.label.startsWith('al banco') && item.purchasedCoveredG > 0 && item.purchasedCoveredG % unit.usableG === 0) {
+  if (
+    unit &&
+    !unit.label.startsWith('al banco') &&
+    item.purchasedCoveredG > 0 &&
+    item.purchasedCoveredG % unit.usableG === 0
+  ) {
     return `${t.shopping.bought} · ${packText(item.purchasedCoveredG / unit.usableG, unit.label)}`;
   }
   return `${t.shopping.bought} · ${item.purchasedCoveredG} g`;
@@ -119,7 +124,11 @@ export function ShoppingScreen() {
         <Header />
         <EmptyState
           title={t.shopping.empty}
-          body={week ? `Week of ${weekLabel(week.monday)} has no meals planned yet.` : 'Stasera drafts the week, then turns it into packs in the order you walk the store.'}
+          body={
+            week
+              ? `Week of ${weekLabel(week.monday)} has no meals planned yet.`
+              : 'Stasera drafts the week, then turns it into packs in the order you walk the store.'
+          }
           action={
             <Link to="/week" className="contents">
               <Button variant="primary" size="lg" icon={<CalendarDays size={18} />}>
@@ -158,7 +167,9 @@ export function ShoppingScreen() {
   };
 
   // Walk order: sections, then the fresh run; done rows sink to the cart group in that same order.
-  const pendingSections = list.sections.map((s) => ({ section: s.section, items: s.items.filter((i) => !isDone(i)) })).filter((s) => s.items.length > 0);
+  const pendingSections = list.sections
+    .map((s) => ({ section: s.section, items: s.items.filter((i) => !isDone(i)) }))
+    .filter((s) => s.items.length > 0);
   const pendingFresh = list.freshRun.filter((i) => !isDone(i));
   const cartItems = [...list.sections.flatMap((s) => s.items), ...list.freshRun].filter(isDone);
   const pendingManual = list.manual.filter((m) => !m.checked);
@@ -172,11 +183,19 @@ export function ShoppingScreen() {
       <Header>
         <p className="mt-1 text-sm text-muted">Week of {weekLabel(week.monday)}</p>
         <div className="mt-3 flex items-center gap-3">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-cream-2" role="progressbar" aria-valuemin={0} aria-valuemax={lines} aria-valuenow={checked} aria-label={t.shopping.inCart}>
+          <div
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-cream-2"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={lines}
+            aria-valuenow={checked}
+            aria-label={t.shopping.inCart}
+          >
             <div className="h-full rounded-full bg-olive transition-[width]" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-sm tabular-nums text-ink-2">
-            <span className="font-semibold text-ink">{checked}</span>/{lines} {t.shopping.inCart.toLowerCase()}
+            <span className="font-semibold text-ink">{checked}</span>/{lines}{' '}
+            {t.shopping.inCart.toLowerCase()}
           </p>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -193,20 +212,33 @@ export function ShoppingScreen() {
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label={t.shopping.store}>
         {STORES.map((s) => (
-          <Chip key={s.id} selected={h.prefs.store === s.id} onClick={() => actions.setPrefs({ store: s.id })} title={s.name} className="shrink-0">
+          <Chip
+            key={s.id}
+            selected={h.prefs.store === s.id}
+            onClick={() => actions.setPrefs({ store: s.id })}
+            title={s.name}
+            className="shrink-0"
+          >
             {storeShortName(s.name)}
           </Chip>
         ))}
       </div>
 
       {!online && (
-        <p className="flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 text-sm text-muted" role="status">
+        <p
+          className="flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2 text-sm text-muted"
+          role="status"
+        >
           <WifiOff size={16} /> {t.shopping.offline}
         </p>
       )}
 
       {pendingSections.map((s) => (
-        <SectionCard key={s.section} title={SECTION_LABELS[s.section].en} subtitle={SECTION_LABELS[s.section].it}>
+        <SectionCard
+          key={s.section}
+          title={SECTION_LABELS[s.section].en}
+          subtitle={SECTION_LABELS[s.section].it}
+        >
           <ul>
             {s.items.map((item) => (
               <Row key={item.key} item={item} {...rowProps} />
@@ -216,7 +248,11 @@ export function ShoppingScreen() {
       ))}
 
       {pendingFresh.length > 0 && (
-        <SectionCard title={t.shopping.freshRun} subtitle="Spesa fresca" hint="Bread and leaves bought Sunday don't last; buy these Wednesday or Thursday.">
+        <SectionCard
+          title={t.shopping.freshRun}
+          subtitle="Spesa fresca"
+          hint="Bread and leaves bought Sunday don't last; buy these Wednesday or Thursday."
+        >
           <ul>
             {pendingFresh.map((item) => (
               <Row key={item.key} item={item} {...rowProps} showSection />
@@ -254,7 +290,17 @@ function Header({ children }: { children?: React.ReactNode }) {
   );
 }
 
-function SectionCard({ title, subtitle, hint, children }: { title: string; subtitle?: string; hint?: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  subtitle,
+  hint,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="card px-3 pb-1 pt-3" aria-label={title}>
       <div className="flex items-baseline justify-between gap-3 px-1">
@@ -307,18 +353,33 @@ function Row({
         >
           <span
             aria-hidden="true"
-            className={clsx('flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition', done ? 'border-olive bg-olive text-white' : 'border-line bg-surface')}
+            className={clsx(
+              'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition',
+              done ? 'border-olive bg-olive text-white' : 'border-line bg-surface',
+            )}
           >
             {done && <Check size={14} strokeWidth={3} />}
           </span>
           <span className="min-w-0 flex-1">
-            <span className={clsx('block leading-snug', done && 'line-through decoration-muted/70')}>
+            <span
+              id={`${panelId}-name`}
+              className={clsx('block leading-snug', done && 'line-through decoration-muted/70')}
+            >
               <span className={clsx('font-semibold', done ? 'text-muted' : 'text-ink')}>{nameIt}</span>
-              {nameEn && nameEn.toLowerCase() !== nameIt.toLowerCase() && <span className="text-muted"> {nameEn}</span>}
+              {nameEn && nameEn.toLowerCase() !== nameIt.toLowerCase() && (
+                <span className="text-muted"> {nameEn}</span>
+              )}
             </span>
-            <span className={clsx('mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm tabular-nums', done ? 'text-muted' : 'text-ink-2')}>
+            <span
+              className={clsx(
+                'mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm tabular-nums',
+                done ? 'text-muted' : 'text-ink-2',
+              )}
+            >
               <span>{buyText(item, food)}</span>
-              {!done && item.pantryDeductedG > 0 && <span className="text-muted">· {item.pantryDeductedG} g from the pantry</span>}
+              {!done && item.pantryDeductedG > 0 && (
+                <span className="text-muted">· {item.pantryDeductedG} g from the pantry</span>
+              )}
               {item.estimate && !done && <Badge>{t.shopping.estimate}</Badge>}
               {item.staple && !done && <Badge tone="warn">{t.shopping.runningLow}</Badge>}
               {showSection && <span className="text-muted">· {SECTION_LABELS[item.section].it}</span>}
@@ -327,7 +388,8 @@ function Row({
         </button>
         <button
           type="button"
-          aria-label={`${t.shopping.why}: ${nameIt}`}
+          aria-label={t.shopping.why}
+          aria-describedby={`${panelId}-name`}
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpenKey(open ? null : panelId)}
@@ -336,12 +398,35 @@ function Row({
           <ChevronDown size={20} className={clsx('transition-transform', open && 'rotate-180')} />
         </button>
       </div>
-      {open && <WhyPanel id={panelId} item={item} nameIt={nameIt} pantryG={ctx.h.pantry[item.foodId] ?? 0} inCart={inCart} onClose={() => setOpenKey(null)} />}
+      {open && (
+        <WhyPanel
+          id={panelId}
+          item={item}
+          nameIt={nameIt}
+          pantryG={ctx.h.pantry[item.foodId] ?? 0}
+          inCart={inCart}
+          onClose={() => setOpenKey(null)}
+        />
+      )}
     </li>
   );
 }
 
-function WhyPanel({ id, item, nameIt, pantryG, inCart, onClose }: { id: string; item: ShoppingItem; nameIt: string; pantryG: number; inCart: boolean; onClose: () => void }) {
+function WhyPanel({
+  id,
+  item,
+  nameIt,
+  pantryG,
+  inCart,
+  onClose,
+}: {
+  id: string;
+  item: ShoppingItem;
+  nameIt: string;
+  pantryG: number;
+  inCart: boolean;
+  onClose: () => void;
+}) {
   const toast = useToast();
   const [pantryOpen, setPantryOpen] = useState(false);
   const [grams, setGrams] = useState(String(pantryG));
@@ -374,8 +459,7 @@ function WhyPanel({ id, item, nameIt, pantryG, inCart, onClose }: { id: string; 
         <p className="mt-1 text-ink-2">Flagged as running low.</p>
       )}
       <p className="mt-2 tabular-nums text-muted">
-        Needs {item.demandG} g
-        {item.pantryDeductedG > 0 && ` · ${item.pantryDeductedG} g from the pantry`}
+        Needs {item.demandG} g{item.pantryDeductedG > 0 && ` · ${item.pantryDeductedG} g from the pantry`}
         {item.purchasedCoveredG > 0 && ` · ${item.purchasedCoveredG} g ${t.shopping.bought}`}
         {item.buy && item.buy.leftoverG > 0 && ` · ${item.buy.leftoverG} g left over`}
         {pantryG > 0 && item.pantryDeductedG === 0 && ` · ${pantryG} g in the pantry`}
@@ -393,13 +477,12 @@ function WhyPanel({ id, item, nameIt, pantryG, inCart, onClose }: { id: string; 
             {t.shopping.haveIt}
           </Button>
         )}
-        <Button size="sm" variant="ghost" onClick={() => setPantryOpen((v) => !v)} aria-expanded={pantryOpen} aria-controls={inputId}>
+        <Button size="sm" onClick={() => setPantryOpen((v) => !v)} aria-expanded={pantryOpen}>
           Set pantry amount
         </Button>
         {item.staple && (
           <Button
             size="sm"
-            variant="ghost"
             onClick={() => {
               actions.toggleRunningLow(item.foodId);
               toast(`${nameIt}: back among the staples.`, 'ok');
@@ -449,11 +532,21 @@ function ManualRow({ item, weekId }: { item: ManualItem; weekId: string }) {
         >
           <span
             aria-hidden="true"
-            className={clsx('flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition', item.checked ? 'border-olive bg-olive text-white' : 'border-line bg-surface')}
+            className={clsx(
+              'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition',
+              item.checked ? 'border-olive bg-olive text-white' : 'border-line bg-surface',
+            )}
           >
             {item.checked && <Check size={14} strokeWidth={3} />}
           </span>
-          <span className={clsx('min-w-0 flex-1 leading-snug', item.checked ? 'text-muted line-through decoration-muted/70' : 'text-ink')}>{item.text}</span>
+          <span
+            className={clsx(
+              'min-w-0 flex-1 leading-snug',
+              item.checked ? 'text-muted line-through decoration-muted/70' : 'text-ink',
+            )}
+          >
+            {item.text}
+          </span>
         </button>
         <button
           type="button"
@@ -519,26 +612,44 @@ function StaplesCard({ ctx, foodIds }: { ctx: Ctx; foodIds: string[] }) {
   const names = foods.map((f) => f.nameIt).join(', ');
   return (
     <section className="card px-3 py-1" aria-label={t.shopping.staples}>
-      <button type="button" className="tap flex w-full items-center justify-between gap-3 rounded-xl px-1 text-left" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls="staples-list">
+      <button
+        type="button"
+        className="tap flex w-full items-center justify-between gap-3 rounded-xl px-1 text-left"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="staples-list"
+      >
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-ink">
             {t.shopping.staples} <span className="font-normal text-muted">· {foods.length}</span>
           </span>
           {!open && <span className="block truncate text-sm text-muted">{names}</span>}
         </span>
-        <ChevronDown size={20} className={clsx('shrink-0 text-muted transition-transform', open && 'rotate-180')} />
+        <ChevronDown
+          size={20}
+          className={clsx('shrink-0 text-muted transition-transform', open && 'rotate-180')}
+        />
       </button>
       {open && (
         <div id="staples-list" className="px-1 pb-2">
-          <p className="mb-2 text-sm text-muted">In the pantry already; tap when one is running low and it joins the list.</p>
+          <p className="mb-2 text-sm text-muted">
+            In the pantry already; tap when one is running low and it joins the list.
+          </p>
           <ul className="divide-y divide-line">
             {foods.map((f) => (
               <li key={f.id} className="flex items-center justify-between gap-3 py-1.5">
                 <span className="min-w-0 leading-snug">
                   <span className="font-medium text-ink">{f.nameIt}</span>
-                  {f.nameEn.toLowerCase() !== f.nameIt.toLowerCase() && <span className="text-muted"> {f.nameEn}</span>}
+                  {f.nameEn.toLowerCase() !== f.nameIt.toLowerCase() && (
+                    <span className="text-muted"> {f.nameEn}</span>
+                  )}
                 </span>
-                <Chip selected={low.has(f.id)} tone="warn" onClick={() => actions.toggleRunningLow(f.id)} className="shrink-0">
+                <Chip
+                  selected={low.has(f.id)}
+                  tone="warn"
+                  onClick={() => actions.toggleRunningLow(f.id)}
+                  className="shrink-0"
+                >
                   {t.shopping.runningLow}
                 </Chip>
               </li>

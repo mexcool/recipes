@@ -39,7 +39,12 @@ export function CookScreen() {
     .map((b) => {
       const line = lines.find((l) => l.role === b.role);
       if (!line) return null;
-      return { role: b.role, food: ctx.foodMap.get(line.foodId)?.nameEn ?? line.foodId, hint: POT_HINT[b.pot] ?? '', prep: b.prep };
+      return {
+        role: b.role,
+        food: ctx.foodMap.get(line.foodId)?.nameEn ?? line.foodId,
+        hint: POT_HINT[b.pot] ?? '',
+        prep: b.prep,
+      };
     })
     .filter((x): x is NonNullable<typeof x> => !!x);
   const isToday = date === now.date;
@@ -49,7 +54,9 @@ export function CookScreen() {
       <div className="safe-top flex items-center gap-2 pt-2">
         <BackLink />
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">{t.meals[meal]} · {date}</p>
+          <p className="text-xs uppercase tracking-wide text-muted">
+            {t.meals[meal]} · {date}
+          </p>
           <h1 className="text-2xl font-semibold leading-tight">{dish ? dish.titleEn : t.tonight.noDish}</h1>
           {dish && <p className="text-sm text-muted">{dish.titleIt}</p>}
         </div>
@@ -61,7 +68,8 @@ export function CookScreen() {
           <PlatesTable plates={plates} ctx={ctx} />
           {vegNames.length > 0 && (
             <p className="mt-3 text-sm text-ink-2">
-              {t.roles.veg}: {vegNames.join(', ')} <span className="text-muted">— as much as you like, not weighed</span>
+              {t.roles.veg}: {vegNames.join(', ')}{' '}
+              <span className="text-muted">— as much as you like, not weighed</span>
             </p>
           )}
         </Card>
@@ -91,14 +99,18 @@ export function CookScreen() {
           <ol className="space-y-3">
             {dish.steps.map((s, i) => (
               <li key={i} className="flex gap-3 text-[17px] leading-snug">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-olive-soft text-sm font-semibold text-olive-2">{i + 1}</span>
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-olive-soft text-sm font-semibold text-olive-2">
+                  {i + 1}
+                </span>
                 <span>{renderStep(s, lines, ctx, plates)}</span>
               </li>
             ))}
           </ol>
         ) : (
           <p className="text-ink-2">
-            No recipe attached. Cook {lines.map((l) => ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId).join(', ')} with the vegetables, using the allowed methods ({ctx.rev.rules.methods.join(', ')}).
+            No recipe attached. Cook{' '}
+            {lines.map((l) => ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId).join(', ')} with the vegetables,
+            using the allowed methods ({ctx.rev.rules.methods.join(', ')}).
           </p>
         )}
         {mt?.note && <p className="mt-3 rounded-xl bg-surface-2 p-3 text-sm text-ink-2">{mt.note}</p>}
@@ -106,7 +118,9 @@ export function CookScreen() {
 
       {dish && (
         <Card className="text-sm text-muted">
-          {t.recipes.condiments}: {dish.condiments.map((c) => ctx.foodMap.get(c)?.nameEn ?? c).join(', ') || '—'} · {t.recipes.methods}: {dish.methods.join(', ') || '—'}
+          {t.recipes.condiments}:{' '}
+          {dish.condiments.map((c) => ctx.foodMap.get(c)?.nameEn ?? c).join(', ') || '—'} ·{' '}
+          {t.recipes.methods}: {dish.methods.join(', ') || '—'}
         </Card>
       )}
 
@@ -142,7 +156,11 @@ export function CookScreen() {
 
 function BackLink() {
   return (
-    <Link to="/" className="tap flex items-center justify-center rounded-full text-ink-2 hover:bg-surface-2" aria-label={t.common.back}>
+    <Link
+      to="/"
+      className="tap flex items-center justify-center rounded-full text-ink-2 hover:bg-surface-2"
+      aria-label={t.common.back}
+    >
       <ArrowLeft size={22} />
     </Link>
   );
@@ -151,8 +169,13 @@ function BackLink() {
 function useWakeLock() {
   useEffect(() => {
     let lock: { release: () => Promise<void> } | null = null;
-    const nav = navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> } };
-    nav.wakeLock?.request('screen').then((l) => (lock = l)).catch(() => undefined);
+    const nav = navigator as Navigator & {
+      wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> };
+    };
+    nav.wakeLock
+      ?.request('screen')
+      .then((l) => (lock = l))
+      .catch(() => undefined);
     return () => {
       lock?.release().catch(() => undefined);
     };

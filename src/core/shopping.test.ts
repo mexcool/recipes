@@ -15,7 +15,13 @@ describe('reconciliation arithmetic', () => {
   });
   it('checking two packs covers 1000 g; demand rising to 1100 g is still covered; 1300 g needs one more pack', () => {
     const r = reconcile(900, 100, 0, unit500);
-    const purchase = purchaseForCheck({ toBuyG: r.toBuyG, buy: r.buy } as never, undefined, 'g', '2026-11-08T10:00:00Z', 'op1');
+    const purchase = purchaseForCheck(
+      { toBuyG: r.toBuyG, buy: r.buy } as never,
+      undefined,
+      'g',
+      '2026-11-08T10:00:00Z',
+      'op1',
+    );
     expect(purchase.coveredG).toBe(1000);
     expect(reconcile(1100, 100, purchase.coveredG, unit500).toBuyG).toBe(0);
     const more = reconcile(1300, 100, purchase.coveredG, unit500);
@@ -38,7 +44,23 @@ describe.each(PLANS)('aggregation on the $name plan', ({ plan }) => {
   const rev = activeRevision(plan);
   const base = (seed: number) => {
     const { week, batches } = okWeek(plan, seed);
-    return { week, batches, input: { week, rev, foods: FOODS, dishes: SEED_DISHES, members: MEMBERS, batches, pantry: {}, purchases: {}, manual: [], prefs: PREFS, store: 'coop' } };
+    return {
+      week,
+      batches,
+      input: {
+        week,
+        rev,
+        foods: FOODS,
+        dishes: SEED_DISHES,
+        members: MEMBERS,
+        batches,
+        pantry: {},
+        purchases: {},
+        manual: [],
+        prefs: PREFS,
+        store: 'coop',
+      },
+    };
   };
 
   it('is idempotent and lists every food of every meal including breakfast and snacks', () => {
@@ -67,7 +89,12 @@ describe.each(PLANS)('aggregation on the $name plan', ({ plan }) => {
 
   it('excludes staples unless running low, and preserves manual items', () => {
     const { input } = base(4);
-    const list = aggregateShopping({ ...input, manual: [{ id: 'm1', text: 'dish soap', section: 'drinks', checked: false, createdAt: '2026-11-08T00:00:00Z' }] });
+    const list = aggregateShopping({
+      ...input,
+      manual: [
+        { id: 'm1', text: 'dish soap', section: 'drinks', checked: false, createdAt: '2026-11-08T00:00:00Z' },
+      ],
+    });
     expect(list.items.find((i) => i.foodId === 'olio_evo')).toBeUndefined();
     expect(list.staplesUsed).toContain('olio_evo');
     expect(list.manual).toHaveLength(1);
@@ -91,25 +118,34 @@ describe.each(PLANS)('aggregation on the $name plan', ({ plan }) => {
   it('a leftover meal adds no demand and a cooking batch multiplies it', () => {
     const { input, week, batches } = base(4);
     const list = aggregateShopping(input);
-    const cook = week.days.flatMap((d) => (['pranzo', 'cena'] as const).map((w) => d[w])).find((m) => m.batchId);
+    const cook = week.days
+      .flatMap((d) => (['pranzo', 'cena'] as const).map((w) => d[w]))
+      .find((m) => m.batchId);
     if (!cook) return;
     const batch = batches.find((b) => b.id === cook.batchId)!;
     expect(batch.portions.every((p) => p.n === 2)).toBe(true);
-    const proteinLine = list.items.find((i) => i.why.some((w) => w.date === batch.cookAt.date && w.meal === batch.cookAt.meal));
+    const proteinLine = list.items.find((i) =>
+      i.why.some((w) => w.date === batch.cookAt.date && w.meal === batch.cookAt.meal),
+    );
     expect(proteinLine).toBeDefined();
   });
 
   it('splits a mid-week fresh run for bread and leaves', () => {
     const { input } = base(4);
     const list = aggregateShopping(input);
-    for (const it of list.freshRun) expect(['bread', 'veg', 'veg_sugary', 'cheese_fresh']).toContain(foodById(it.foodId).subgroup);
+    for (const it of list.freshRun)
+      expect(['bread', 'veg', 'veg_sugary', 'cheese_fresh']).toContain(foodById(it.foodId).subgroup);
     const off = aggregateShopping({ ...input, prefs: { ...PREFS, splitFreshRun: false } });
     expect(off.freshRun).toHaveLength(0);
   });
 
   it('orders sections by the chosen store', () => {
     const { input } = base(4);
-    const coop = aggregateShopping({ ...input, store: 'coop', storeOrders: { coop: ['frozen', 'produce'], carrefour: ['produce', 'frozen'] } });
+    const coop = aggregateShopping({
+      ...input,
+      store: 'coop',
+      storeOrders: { coop: ['frozen', 'produce'], carrefour: ['produce', 'frozen'] },
+    });
     expect(coop.sections[0]?.section).toBe('frozen');
     const text = listAsText(coop, foodMap(FOODS), (s) => s.toUpperCase());
     expect(text).toContain('FROZEN');

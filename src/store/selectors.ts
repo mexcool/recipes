@@ -102,7 +102,11 @@ export function rulesFor(ctx: Ctx, week: Week): RuleResult[] {
   return evaluateRules(week, ctx.rev, ctx.foodMap);
 }
 
-export function dishTitle(ctx: Ctx, dishId: string | undefined, lang: 'en' | 'it' = 'en'): string | undefined {
+export function dishTitle(
+  ctx: Ctx,
+  dishId: string | undefined,
+  lang: 'en' | 'it' = 'en',
+): string | undefined {
   const d = dishId ? ctx.dishes.get(dishId) : undefined;
   if (!d) return undefined;
   return lang === 'it' ? d.titleIt : d.titleEn;

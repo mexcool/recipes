@@ -26,7 +26,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4" aria-live="polite">
+      <div
+        className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4"
+        aria-live="polite"
+      >
         {toasts.map((x) => (
           <div
             key={x.id}
@@ -37,7 +40,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               x.tone === 'error' && 'bg-terra text-white',
             )}
           >
-            {x.tone === 'ok' ? <CheckCircle2 size={18} /> : x.tone === 'error' ? <AlertTriangle size={18} /> : <Info size={18} />}
+            {x.tone === 'ok' ? (
+              <CheckCircle2 size={18} />
+            ) : x.tone === 'error' ? (
+              <AlertTriangle size={18} />
+            ) : (
+              <Info size={18} />
+            )}
             <span>{x.text}</span>
           </div>
         ))}

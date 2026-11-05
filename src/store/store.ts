@@ -63,7 +63,8 @@ export class HouseholdStore {
     const prev = this.get();
     const next = fn(prev);
     this.doc = { ...next, updatedAt: new Date().toISOString() };
-    if (next.sync && docChanged(prev, next)) void db.kv.put({ key: 'sync.dirty', value: true, updatedAt: this.doc.updatedAt });
+    if (next.sync && docChanged(prev, next))
+      void db.kv.put({ key: 'sync.dirty', value: true, updatedAt: this.doc.updatedAt });
     this.emit();
     this.scheduleSave();
     return this.doc;

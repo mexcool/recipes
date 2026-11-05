@@ -62,17 +62,27 @@ export async function queueCheck(op: CheckOp): Promise<void> {
 
 /** Fold operations into the purchases map, newest `at` wins per (week, key). */
 export function foldOps(purchases: Household['purchases'], ops: CheckOp[]): Household['purchases'] {
-  const out: Household['purchases'] = Object.fromEntries(Object.entries(purchases).map(([k, v]) => [k, { ...v }]));
+  const out: Household['purchases'] = Object.fromEntries(
+    Object.entries(purchases).map(([k, v]) => [k, { ...v }]),
+  );
   // Newest timestamp seen per (week, key), including unchecks that removed the entry.
   const latestAt = new Map<string, string>();
-  for (const [w, items] of Object.entries(out)) for (const [k, v] of Object.entries(items)) latestAt.set(`${w}|${k}`, v.at);
+  for (const [w, items] of Object.entries(out))
+    for (const [k, v] of Object.entries(items)) latestAt.set(`${w}|${k}`, v.at);
   for (const op of [...ops].sort((a, b) => a.at.localeCompare(b.at))) {
     const id = `${op.weekId}|${op.key}`;
     const seen = latestAt.get(id);
     if (seen && seen > op.at) continue;
     latestAt.set(id, op.at);
     const week = { ...(out[op.weekId] ?? {}) };
-    if (op.checked) week[op.key] = { coveredG: op.coveredG, at: op.at, by: op.by, opId: op.opId, rev: op.rev } satisfies Purchase;
+    if (op.checked)
+      week[op.key] = {
+        coveredG: op.coveredG,
+        at: op.at,
+        by: op.by,
+        opId: op.opId,
+        rev: op.rev,
+      } satisfies Purchase;
     else delete week[op.key];
     out[op.weekId] = week;
   }
@@ -90,7 +100,10 @@ export function serviceBase(serviceUrl: string): string {
 /** Create a household on the service and store the returned token locally. */
 export async function connectNew(serviceUrl: string): Promise<SyncStatus> {
   const h = store.get();
-  const res = await api(`${serviceBase(serviceUrl)}/h`, { method: 'POST', body: JSON.stringify({ doc: docForSync(h) }) });
+  const res = await api(`${serviceBase(serviceUrl)}/h`, {
+    method: 'POST',
+    body: JSON.stringify({ doc: docForSync(h) }),
+  });
   if (!res.ok) throw new Error(`Service refused (${res.status})`);
   const { token, version } = (await res.json()) as { token: string; version: number };
   store.update((x) => ({ ...x, sync: { serviceUrl: serviceBase(serviceUrl), token, lastVersion: version } }));
@@ -102,10 +115,19 @@ export async function connectNew(serviceUrl: string): Promise<SyncStatus> {
 export async function joinExisting(serviceUrl: string, token: string): Promise<SyncStatus> {
   const base = serviceBase(serviceUrl);
   const res = await api(`${base}/h/${token}/state?since=0&sinceSeq=0`);
-  if (!res.ok) throw new Error(res.status === 404 ? 'That link is not valid any more' : `Service error (${res.status})`);
+  if (!res.ok)
+    throw new Error(res.status === 404 ? 'That link is not valid any more' : `Service error (${res.status})`);
   const data = (await res.json()) as { version: number; doc: unknown; ops: CheckOp[]; lastSeq: number };
-  const remote = migrateHousehold({ ...(data.doc as object), purchases: {}, sync: { serviceUrl: base, token, lastVersion: data.version } });
-  const merged: Household = { ...remote, purchases: foldOps({}, data.ops), sync: { serviceUrl: base, token, lastVersion: data.version } };
+  const remote = migrateHousehold({
+    ...(data.doc as object),
+    purchases: {},
+    sync: { serviceUrl: base, token, lastVersion: data.version },
+  });
+  const merged: Household = {
+    ...remote,
+    purchases: foldOps({}, data.ops),
+    sync: { serviceUrl: base, token, lastVersion: data.version },
+  };
   store.replace(merged);
   await db.outbox.clear();
   await db.kv.put({ key: 'sync.lastSeq', value: data.lastSeq, updatedAt: new Date().toISOString() });
@@ -162,13 +184,21 @@ async function run(): Promise<SyncStatus> {
   setStatus({ state: 'syncing' });
   try {
     // 1. Push queued checks.
-    const queued = (await db.outbox.toArray()).filter((o): o is OutboxOp & { payload: CheckOp } => o.kind === 'check');
+    const queued = (await db.outbox.toArray()).filter(
+      (o): o is OutboxOp & { payload: CheckOp } => o.kind === 'check',
+    );
     let conflicts: { opId: string; winner: CheckOp }[] = [];
     if (queued.length) {
-      const res = await api(`${serviceUrl}/h/${token}/ops`, { method: 'POST', body: JSON.stringify({ ops: queued.map((o) => o.payload) }) });
+      const res = await api(`${serviceUrl}/h/${token}/ops`, {
+        method: 'POST',
+        body: JSON.stringify({ ops: queued.map((o) => o.payload) }),
+      });
       if (res.status === 404) throw new Error('The household is no longer on the service (token rotated?)');
       if (!res.ok) throw new Error(`Could not send ticks (${res.status})`);
-      const body = (await res.json()) as { applied: string[]; conflicts: { opId: string; winner: CheckOp }[] };
+      const body = (await res.json()) as {
+        applied: string[];
+        conflicts: { opId: string; winner: CheckOp }[];
+      };
       conflicts = body.conflicts;
       await db.outbox.bulkDelete(queued.map((o) => o.opId));
     }
@@ -176,15 +206,25 @@ async function run(): Promise<SyncStatus> {
     const dirty = (await db.kv.get('sync.dirty'))?.value === true;
     let version = h.sync.lastVersion;
     if (dirty) {
-      const res = await api(`${serviceUrl}/h/${token}/doc`, { method: 'PUT', body: JSON.stringify({ baseVersion: version, doc: docForSync(store.get()) }) });
+      const res = await api(`${serviceUrl}/h/${token}/doc`, {
+        method: 'PUT',
+        body: JSON.stringify({ baseVersion: version, doc: docForSync(store.get()) }),
+      });
       if (res.status === 409) {
         const body = (await res.json()) as { version: number; doc: unknown };
         // Someone else planned in the meantime: take theirs, keep our purchases (they are ops), report it.
-        const remote = migrateHousehold({ ...(body.doc as object), purchases: store.get().purchases, sync: { serviceUrl, token, lastVersion: body.version } });
+        const remote = migrateHousehold({
+          ...(body.doc as object),
+          purchases: store.get().purchases,
+          sync: { serviceUrl, token, lastVersion: body.version },
+        });
         store.replace(remote);
         await db.kv.put({ key: 'sync.dirty', value: false, updatedAt: new Date().toISOString() });
         version = body.version;
-        setStatus({ state: 'conflict', message: 'The plan was changed on the other phone; showing their version.' });
+        setStatus({
+          state: 'conflict',
+          message: 'The plan was changed on the other phone; showing their version.',
+        });
       } else if (!res.ok) {
         throw new Error(`Could not send the plan (${res.status})`);
       } else {
@@ -201,7 +241,11 @@ async function run(): Promise<SyncStatus> {
     const current = store.get();
     let next: Household = current;
     if (data.doc) {
-      next = migrateHousehold({ ...(data.doc as object), purchases: current.purchases, sync: { serviceUrl, token, lastVersion: data.version } });
+      next = migrateHousehold({
+        ...(data.doc as object),
+        purchases: current.purchases,
+        sync: { serviceUrl, token, lastVersion: data.version },
+      });
     } else {
       next = { ...current, sync: { serviceUrl, token, lastVersion: data.version } };
     }
@@ -213,10 +257,18 @@ async function run(): Promise<SyncStatus> {
       state: conflicts.length ? 'conflict' : status.state === 'conflict' ? 'conflict' : 'idle',
       lastSync: new Date().toISOString(),
       pending,
-      message: conflicts.length ? `${conflicts.length} tick${conflicts.length > 1 ? 's' : ''} changed on the other phone` : status.state === 'conflict' ? status.message : undefined,
+      message: conflicts.length
+        ? `${conflicts.length} tick${conflicts.length > 1 ? 's' : ''} changed on the other phone`
+        : status.state === 'conflict'
+          ? status.message
+          : undefined,
     });
   } catch (e) {
-    setStatus({ state: 'error', message: e instanceof Error ? e.message : String(e), pending: await db.outbox.count() });
+    setStatus({
+      state: 'error',
+      message: e instanceof Error ? e.message : String(e),
+      pending: await db.outbox.count(),
+    });
   }
   return status;
 }

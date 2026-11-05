@@ -25,14 +25,20 @@ export interface RuleResult {
   witnesses: Occurrence[];
 }
 
-export function collectOccurrences(week: Week, rev: PlanRevision, foods: ReadonlyMap<string, Food>, opts: { skipDates?: Set<string> } = {}): Occurrence[] {
+export function collectOccurrences(
+  week: Week,
+  rev: PlanRevision,
+  foods: ReadonlyMap<string, Food>,
+  opts: { skipDates?: Set<string> } = {},
+): Occurrence[] {
   const out: Occurrence[] = [];
   for (const day of week.days) {
     if (opts.skipDates?.has(day.date)) continue;
     const t = templateFor(rev, day.template);
     if (day.colazione) {
       const opt = rev.fixedMenus.colazione.find((o) => o.id === day.colazione);
-      for (const it of opt?.items ?? []) out.push(occ(day.date, 'colazione', it.foodId, it.qty.kind === 'count' ? it.qty.count : 1, foods));
+      for (const it of opt?.items ?? [])
+        out.push(occ(day.date, 'colazione', it.foodId, it.qty.kind === 'count' ? it.qty.count : 1, foods));
     }
     if (day.spuntino) {
       const fruit = rev.fixedMenus.spuntino.tiers[0]?.foodIds[0];
@@ -56,7 +62,13 @@ export function collectOccurrences(week: Week, rev: PlanRevision, foods: Readonl
   return out;
 }
 
-function occ(date: string, meal: MealType, foodId: string, units: number, foods: ReadonlyMap<string, Food>): Occurrence {
+function occ(
+  date: string,
+  meal: MealType,
+  foodId: string,
+  units: number,
+  foods: ReadonlyMap<string, Food>,
+): Occurrence {
   const f = foods.get(foodId);
   return { date, meal, foodId, subgroup: f?.subgroup ?? 'condiment', units, garnish: false };
 }
@@ -73,18 +85,33 @@ function countOf(rule: FrequencyRule, occs: Occurrence[]): number {
   return new Set(occs.map((o) => `${o.date}|${o.meal}`)).size;
 }
 
-export function evaluateRule(rule: FrequencyRule, occurrences: readonly Occurrence[], dates: readonly string[]): RuleResult {
+export function evaluateRule(
+  rule: FrequencyRule,
+  occurrences: readonly Occurrence[],
+  dates: readonly string[],
+): RuleResult {
   const matching = occurrences.filter((o) => ruleMatches(rule, o));
   if (rule.per === 'day') {
-    const perDay = dates.map((date) => ({ date, count: countOf(rule, matching.filter((o) => o.date === date)) }));
-    const bad = perDay.filter((d) => (rule.min !== undefined && d.count < rule.min) || (rule.max !== undefined && d.count > rule.max));
-    const worst = perDay.reduce((w, d) => (d.count > w ? d.count : w), 0);
+    const perDay = dates.map((date) => ({
+      date,
+      count: countOf(
+        rule,
+        matching.filter((o) => o.date === date),
+      ),
+    }));
+    const bad = perDay.filter(
+      (d) => (rule.min !== undefined && d.count < rule.min) || (rule.max !== undefined && d.count > rule.max),
+    );
+    const offending = bad[0]?.count;
+    const worst = offending ?? perDay.reduce((w, d) => (d.count > w ? d.count : w), 0);
     return {
       rule,
       count: worst,
       perDay,
       ok: bad.length === 0,
-      ...(bad.length ? { message: `${rule.label}: ${bad.map((d) => `${d.date} has ${d.count}`).join(', ')}` } : {}),
+      ...(bad.length
+        ? { message: `${rule.label}: ${bad.map((d) => `${d.date} has ${d.count}`).join(', ')}` }
+        : {}),
       witnesses: matching.filter((o) => bad.some((d) => d.date === o.date)),
     };
   }

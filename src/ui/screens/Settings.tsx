@@ -1,6 +1,18 @@
 import { Link } from '@tanstack/react-router';
 import { clsx } from 'clsx';
-import { Check, ChevronRight, Copy, Download, FileJson, Minus, Plus, RotateCcw, Search, Upload, X } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  Copy,
+  Download,
+  FileJson,
+  Minus,
+  Plus,
+  RotateCcw,
+  Search,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from 'react';
 import type { Food, Household, Question } from '@/core/model';
 import { todayIso } from '@/core/dates';
@@ -15,7 +27,8 @@ import { Badge, Chip } from '../components/Chip';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Feedback';
 
-const INPUT = 'tap w-full rounded-2xl border border-line bg-surface-2 px-4 py-2.5 text-[15px] text-ink placeholder:text-muted';
+const INPUT =
+  'tap w-full rounded-2xl border border-line bg-surface-2 px-4 py-2.5 text-[15px] text-ink placeholder:text-muted';
 
 export function SettingsScreen() {
   const h = useHousehold();
@@ -46,7 +59,14 @@ function HouseholdSection({ h }: { h: Household }) {
   return (
     <Section title={t.settings.household}>
       <Field label={t.settings.name}>
-        <input key={h.name} className={INPUT} defaultValue={h.name} autoComplete="off" onKeyDown={blurOnEnter} onBlur={(e) => commitText(e.target.value, h.name, actions.setHouseholdName)} />
+        <input
+          key={h.name}
+          className={INPUT}
+          defaultValue={h.name}
+          autoComplete="off"
+          onKeyDown={blurOnEnter}
+          onBlur={(e) => commitText(e.target.value, h.name, actions.setHouseholdName)}
+        />
       </Field>
       <p className="mt-4 text-sm font-medium text-ink-2">{t.settings.members}</p>
       <ul className="divide-y divide-line">
@@ -60,13 +80,23 @@ function HouseholdSection({ h }: { h: Household }) {
                 aria-label={`Name of ${m.name}`}
                 autoComplete="off"
                 onKeyDown={blurOnEnter}
-                onBlur={(e) => commitText(e.target.value, m.name, (name) => actions.setMember(m.id, { name }))}
+                onBlur={(e) =>
+                  commitText(e.target.value, m.name, (name) => actions.setMember(m.id, { name }))
+                }
               />
               {m.constrained && <Badge tone="olive">On the plan</Badge>}
             </div>
             {!m.constrained && (
               <div className="mt-1">
-                <Stepper label={t.settings.multiplier} value={m.multiplier} min={0.5} max={2.5} step={0.1} format={(v) => `×${v.toFixed(1)}`} onChange={(multiplier) => actions.setMember(m.id, { multiplier })} />
+                <Stepper
+                  label={t.settings.multiplier}
+                  value={m.multiplier}
+                  min={0.5}
+                  max={2.5}
+                  step={0.1}
+                  format={(v) => `×${v.toFixed(1)}`}
+                  onChange={(multiplier) => actions.setMember(m.id, { multiplier })}
+                />
                 <p className="text-xs text-muted">Their plate = her plate × multiplier, same proportions.</p>
               </div>
             )}
@@ -91,7 +121,8 @@ function PlanSection({ ctx }: { ctx: Ctx }) {
         <div className="min-w-0">
           <p className="text-lg font-semibold leading-tight">{plan.name}</p>
           <p className="text-sm text-muted">
-            {t.settings.revision} {rev.revision} · {rev.label} · from {rev.validFrom}
+            {t.settings.revision} {rev.revision} · {rev.label} ·{' '}
+            <span className="whitespace-nowrap">from {rev.validFrom}</span>
           </p>
         </div>
         <Badge tone={reviewed ? 'ok' : 'warn'} className="shrink-0 normal-case tracking-normal">
@@ -114,16 +145,26 @@ function PlanSection({ ctx }: { ctx: Ctx }) {
       )}
       <div className="mt-4">
         <Field label={t.settings.nextAppointment}>
-          <input type="date" className={INPUT} value={plan.nextAppointment ?? ''} onChange={(e) => actions.setNextAppointment(e.target.value || undefined)} />
+          <input
+            type="date"
+            className={INPUT}
+            value={plan.nextAppointment ?? ''}
+            onChange={(e) => actions.setNextAppointment(e.target.value || undefined)}
+          />
         </Field>
       </div>
-      <Link to="/settings/plan" className="tap mt-3 flex items-center justify-between gap-2 rounded-2xl bg-olive-soft/70 px-4 py-3 font-medium text-olive-2">
+      <Link
+        to="/settings/plan"
+        className="tap mt-3 flex items-center justify-between gap-2 rounded-2xl bg-olive-soft/70 px-4 py-3 font-medium text-olive-2"
+      >
         <span>{t.settings.amounts}</span>
         <ChevronRight size={20} />
       </Link>
       {rev.sourceDifferences.length > 0 && (
         <details className="mt-3 rounded-2xl border border-line">
-          <summary className="tap flex cursor-pointer items-center px-4 py-3 text-[15px] font-medium text-ink-2">{t.settings.differences}</summary>
+          <summary className="tap flex cursor-pointer items-center px-4 py-3 text-[15px] font-medium text-ink-2">
+            {t.settings.differences}
+          </summary>
           <div className="overflow-x-auto px-2 pb-2">
             <table className="w-full text-sm">
               <thead>
@@ -164,8 +205,18 @@ function PrefsSection({ h, foods, foodMap }: { h: Household; foods: Food[]; food
   return (
     <Section title={t.settings.prefs}>
       <div className="divide-y divide-line">
-        <Switch checked={p.lunchbox} onChange={(lunchbox) => actions.setPrefs({ lunchbox })} label={t.settings.lunchbox} hint="Tonight shows tomorrow's lunch too, so you can pack it." />
-        <Switch checked={p.splitFreshRun} onChange={(splitFreshRun) => actions.setPrefs({ splitFreshRun })} label={t.settings.freshRun} hint="Fresh produce for the second half of the week goes on a small second list." />
+        <Switch
+          checked={p.lunchbox}
+          onChange={(lunchbox) => actions.setPrefs({ lunchbox })}
+          label={t.settings.lunchbox}
+          hint="Tonight shows tomorrow's lunch too, so you can pack it."
+        />
+        <Switch
+          checked={p.splitFreshRun}
+          onChange={(splitFreshRun) => actions.setPrefs({ splitFreshRun })}
+          label={t.settings.freshRun}
+          hint="Fresh produce for the second half of the week goes on a small second list."
+        />
         <div className="py-3">
           <p className="text-[15px] text-ink">{t.settings.store}</p>
           <p className="text-xs text-muted">Sets the order of the shopping list.</p>
@@ -177,7 +228,15 @@ function PrefsSection({ h, foods, foodMap }: { h: Household; foods: Food[]; food
             ))}
           </div>
         </div>
-        <Stepper label={t.settings.vegEstimate} value={p.vegEstimateG} min={100} max={300} step={25} format={(v) => `${v} g`} onChange={(vegEstimateG) => actions.setPrefs({ vegEstimateG })} />
+        <Stepper
+          label={t.settings.vegEstimate}
+          value={p.vegEstimateG}
+          min={100}
+          max={300}
+          step={25}
+          format={(v) => `${v} g`}
+          onChange={(vegEstimateG) => actions.setPrefs({ vegEstimateG })}
+        />
         <Stepper
           label="Weekday dinner, at most"
           hint="Longer dishes are kept for the weekend."
@@ -194,11 +253,21 @@ function PrefsSection({ h, foods, foodMap }: { h: Household; foods: Food[]; food
   );
 }
 
-function DislikesPicker({ dislikes, foods, foodMap }: { dislikes: string[]; foods: Food[]; foodMap: Map<string, Food> }) {
+function DislikesPicker({
+  dislikes,
+  foods,
+  foodMap,
+}: {
+  dislikes: string[];
+  foods: Food[];
+  foodMap: Map<string, Food>;
+}) {
   const [q, setQ] = useState('');
   const query = q.trim().toLowerCase();
   const selected = dislikes.map((id) => foodMap.get(id) ?? { id, nameEn: id, nameIt: id });
-  const matches = query ? foods.filter((f) => !dislikes.includes(f.id) && foodMatches(f, query)).slice(0, 12) : [];
+  const matches = query
+    ? foods.filter((f) => !dislikes.includes(f.id) && foodMatches(f, query)).slice(0, 12)
+    : [];
   const set = (next: string[]) => actions.setPrefs({ dislikes: next });
   return (
     <div className="py-3">
@@ -207,7 +276,12 @@ function DislikesPicker({ dislikes, foods, foodMap }: { dislikes: string[]; food
       {selected.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {selected.map((f) => (
-            <Chip key={f.id} tone="terra" onClick={() => set(dislikes.filter((x) => x !== f.id))} aria-label={`Allow ${f.nameEn} again`}>
+            <Chip
+              key={f.id}
+              tone="terra"
+              onClick={() => set(dislikes.filter((x) => x !== f.id))}
+              aria-label={`Allow ${f.nameEn} again`}
+            >
               {f.nameEn} <X size={14} />
             </Chip>
           ))}
@@ -216,8 +290,18 @@ function DislikesPicker({ dislikes, foods, foodMap }: { dislikes: string[]; food
         <p className="mt-2 text-sm text-ink-2">Nothing excluded.</p>
       )}
       <div className="relative mt-2">
-        <Search size={18} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted" />
-        <input className={clsx(INPUT, 'pl-11')} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a food to exclude" aria-label="Search a food to exclude" autoComplete="off" />
+        <Search
+          size={18}
+          className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted"
+        />
+        <input
+          className={clsx(INPUT, 'pl-11')}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search a food to exclude"
+          aria-label="Search a food to exclude"
+          autoComplete="off"
+        />
       </div>
       {query && (
         <div className="mt-2 flex flex-wrap gap-2" aria-live="polite">
@@ -242,7 +326,11 @@ function DislikesPicker({ dislikes, foods, foodMap }: { dislikes: string[]; food
 }
 
 function foodMatches(f: Food, q: string): boolean {
-  return f.nameEn.toLowerCase().includes(q) || f.nameIt.toLowerCase().includes(q) || f.aliases.some((a) => a.toLowerCase().includes(q));
+  return (
+    f.nameEn.toLowerCase().includes(q) ||
+    f.nameIt.toLowerCase().includes(q) ||
+    f.aliases.some((a) => a.toLowerCase().includes(q))
+  );
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -250,12 +338,19 @@ function foodMatches(f: Food, q: string): boolean {
 // ---------------------------------------------------------------------------------------------
 
 function PantrySection({ h, foods, foodMap }: { h: Household; foods: Food[]; foodMap: Map<string, Food> }) {
-  const entries = Object.entries(h.pantry).sort(([a], [b]) => (foodMap.get(a)?.nameEn ?? a).localeCompare(foodMap.get(b)?.nameEn ?? b));
+  const entries = Object.entries(h.pantry).sort(([a], [b]) =>
+    (foodMap.get(a)?.nameEn ?? a).localeCompare(foodMap.get(b)?.nameEn ?? b),
+  );
   const low = new Set(h.prefs.runningLow);
-  const staples = foods.filter((f) => f.staple || low.has(f.id)).sort((a, b) => a.nameEn.localeCompare(b.nameEn));
+  const staples = foods
+    .filter((f) => f.staple || low.has(f.id))
+    .sort((a, b) => a.nameEn.localeCompare(b.nameEn));
   return (
     <Section title={t.settings.pantry}>
-      <p className="text-sm text-muted">Stock is deducted once from the next week's list; shelf-stable leftovers from pack rounding are added here automatically when you tick a purchase.</p>
+      <p className="text-sm text-muted">
+        Stock is deducted once from the next week's list; shelf-stable leftovers from pack rounding are added
+        here automatically when you tick a purchase.
+      </p>
       {entries.length === 0 ? (
         <p className="mt-3 text-sm text-ink-2">Nothing in stock yet.</p>
       ) : (
@@ -304,7 +399,12 @@ function PantryRow({ foodId, grams, food }: { foodId: string; grams: number; foo
         />
         g
       </label>
-      <button type="button" className="tap -mr-2 flex items-center justify-center rounded-full text-muted hover:bg-surface-2" aria-label={`Remove ${name} from the pantry`} onClick={() => actions.setPantry(foodId, 0)}>
+      <button
+        type="button"
+        className="tap -mr-2 flex items-center justify-center rounded-full text-muted hover:bg-surface-2"
+        aria-label={`Remove ${name} from the pantry`}
+        onClick={() => actions.setPantry(foodId, 0)}
+      >
         <X size={20} />
       </button>
     </li>
@@ -327,7 +427,11 @@ function QuestionsSection({ questions }: { questions: Question[] }) {
   const [draft, setDraft] = useState('');
   const open = questions.filter((q) => !q.answered);
   const copyAll = async () => {
-    const text = [`Questions for the nutritionist (${todayIso()})`, '', ...open.map((q, i) => `${i + 1}. ${q.text}`)].join('\n');
+    const text = [
+      `Questions for the nutritionist (${todayIso()})`,
+      '',
+      ...open.map((q, i) => `${i + 1}. ${q.text}`),
+    ].join('\n');
     try {
       await navigator.clipboard.writeText(text);
       toast(`${open.length} ${open.length === 1 ? 'question' : 'questions'} copied.`, 'ok');
@@ -337,7 +441,9 @@ function QuestionsSection({ questions }: { questions: Question[] }) {
   };
   return (
     <Section title={t.settings.questions}>
-      <p className="text-sm text-muted">Collected from dish checks and imports, plus anything you add. Take them to the next appointment.</p>
+      <p className="text-sm text-muted">
+        Collected from dish checks and imports, plus anything you add. Take them to the next appointment.
+      </p>
       {questions.length === 0 ? (
         <p className="mt-3 text-sm text-ink-2">Nothing to ask yet.</p>
       ) : (
@@ -358,7 +464,14 @@ function QuestionsSection({ questions }: { questions: Question[] }) {
           toast(t.recipes.questionAdded, 'ok');
         }}
       >
-        <input className={clsx(INPUT, 'flex-1')} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a question" aria-label="Add a question" autoComplete="off" />
+        <input
+          className={clsx(INPUT, 'flex-1')}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Add a question"
+          aria-label="Add a question"
+          autoComplete="off"
+        />
         <Button type="submit" variant="primary" disabled={!draft.trim()} icon={<Plus size={18} />}>
           Add
         </Button>
@@ -367,7 +480,9 @@ function QuestionsSection({ questions }: { questions: Question[] }) {
         <Button icon={<Copy size={18} />} disabled={open.length === 0} onClick={() => void copyAll()}>
           Copy all
         </Button>
-        {open.length === 0 && questions.length > 0 && <p className="mt-1 text-xs text-muted">Every question has an answer.</p>}
+        {open.length === 0 && questions.length > 0 && (
+          <p className="mt-1 text-xs text-muted">Every question has an answer.</p>
+        )}
       </div>
     </Section>
   );
@@ -396,7 +511,12 @@ function QuestionRow({ q }: { q: Question }) {
             </p>
           )}
         </div>
-        <button type="button" className="tap -mr-2 flex items-center justify-center rounded-full text-muted hover:bg-surface-2" aria-label={`Remove question: ${q.text}`} onClick={() => actions.removeQuestion(q.id)}>
+        <button
+          type="button"
+          className="tap -mr-2 flex items-center justify-center rounded-full text-muted hover:bg-surface-2"
+          aria-label={`Remove question: ${q.text}`}
+          onClick={() => actions.removeQuestion(q.id)}
+        >
           <X size={20} />
         </button>
       </div>
@@ -408,7 +528,14 @@ function QuestionRow({ q }: { q: Question }) {
             save();
           }}
         >
-          <input className={clsx(INPUT, 'flex-1')} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="What did the nutritionist say?" aria-label={`Answer to: ${q.text}`} autoFocus />
+          <input
+            className={clsx(INPUT, 'flex-1')}
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="What did the nutritionist say?"
+            aria-label={`Answer to: ${q.text}`}
+            autoFocus
+          />
           <Button type="submit" variant="primary" size="sm">
             {t.common.save}
           </Button>
@@ -417,7 +544,12 @@ function QuestionRow({ q }: { q: Question }) {
           </Button>
         </form>
       ) : (
-        <Button className="mt-2" size="sm" variant={q.answered ? 'ghost' : 'secondary'} onClick={() => setEditing(true)}>
+        <Button
+          className="mt-2"
+          size="sm"
+          variant={q.answered ? 'ghost' : 'secondary'}
+          onClick={() => setEditing(true)}
+        >
           {q.answered ? 'Edit the answer' : 'Answered…'}
         </Button>
       )}
@@ -461,7 +593,14 @@ function DataSection() {
     try {
       const text = await file.text();
       const r = kind === 'household' ? actions.importJson(text) : actions.importPlanJson(text);
-      toast(r.ok ? (kind === 'household' ? `Imported ${file.name}.` : `Plan imported from ${file.name} and made active.`) : r.reason, r.ok ? 'ok' : 'error');
+      toast(
+        r.ok
+          ? kind === 'household'
+            ? `Imported ${file.name}.`
+            : `Plan imported from ${file.name} and made active.`
+          : r.reason,
+        r.ok ? 'ok' : 'error',
+      );
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Could not read the file', 'error');
     }
@@ -484,10 +623,29 @@ function DataSection() {
           {t.settings.reset}
         </Button>
       </div>
-      <input ref={importRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void onFile(e, 'household')} />
-      <input ref={planRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void onFile(e, 'plan')} />
+      <input
+        ref={importRef}
+        type="file"
+        accept="application/json,.json"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(e) => void onFile(e, 'household')}
+      />
+      <input
+        ref={planRef}
+        type="file"
+        accept="application/json,.json"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(e) => void onFile(e, 'plan')}
+      />
       <Sheet open={resetOpen} onClose={() => setResetOpen(false)} title={t.settings.reset}>
-        <p className="text-ink-2">This replaces the household, its weeks, pantry, recipes and questions with the demo plan. Export first if you want to keep anything.</p>
+        <p className="text-ink-2">
+          This replaces the household, its weeks, pantry, recipes and questions with the demo plan. Export
+          first if you want to keep anything.
+        </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
             variant="danger"
@@ -528,7 +686,10 @@ function SyncSection({ h }: { h: Household }) {
       <div className="flex items-center gap-2">
         <Badge>Not configured</Badge>
       </div>
-      <p className="mt-2 text-sm text-ink-2">Sync needs the companion service, planned for a later milestone (M3). Until then nothing is sent anywhere.</p>
+      <p className="mt-2 text-sm text-ink-2">
+        Sync needs the companion service, planned for a later milestone (M3). Until then nothing is sent
+        anywhere.
+      </p>
       <p className="mt-2 text-sm text-muted">Use Export/Import to move the plan to a second phone for now.</p>
       <p className="mt-3 text-xs text-muted">
         Household id <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-ink-2">{h.id}</code>
@@ -544,7 +705,9 @@ function AboutSection() {
       <p className="font-display text-xl font-semibold">{t.app.name}</p>
       <p className="text-sm text-ink-2">{t.app.tagline}</p>
       <p className="mt-2 text-sm text-muted">Version {version}</p>
-      <p className="mt-1 text-sm text-muted">No data leaves the phone: no account, no analytics, no server.</p>
+      <p className="mt-1 text-sm text-muted">
+        No data leaves the phone: no account, no analytics, no server.
+      </p>
     </Section>
   );
 }
@@ -571,15 +734,42 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Switch({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }) {
+function Switch({
+  checked,
+  onChange,
+  label,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  hint?: string;
+}) {
   return (
-    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className="tap flex w-full items-center justify-between gap-3 py-3 text-left">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="tap flex w-full items-center justify-between gap-3 py-3 text-left"
+    >
       <span className="min-w-0">
         <span className="block text-[15px] text-ink">{label}</span>
         {hint && <span className="block text-xs text-muted">{hint}</span>}
       </span>
-      <span aria-hidden="true" className={clsx('relative h-7 w-12 shrink-0 rounded-full transition-colors', checked ? 'bg-olive' : 'bg-line')}>
-        <span className={clsx('absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-surface shadow transition-transform', checked && 'translate-x-5')} />
+      <span
+        aria-hidden="true"
+        className={clsx(
+          'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+          checked ? 'bg-olive' : 'bg-line',
+        )}
+      >
+        <span
+          className={clsx(
+            'absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-surface shadow transition-transform',
+            checked && 'translate-x-5',
+          )}
+        />
       </span>
     </button>
   );
@@ -605,7 +795,8 @@ function Stepper({
   onChange: (v: number) => void;
 }) {
   const decimals = (String(step).split('.')[1] ?? '').length;
-  const go = (delta: number) => onChange(Math.min(max, Math.max(min, Number((value + delta).toFixed(decimals)))));
+  const go = (delta: number) =>
+    onChange(Math.min(max, Math.max(min, Number((value + delta).toFixed(decimals)))));
   return (
     <div className="flex items-center justify-between gap-3 py-3">
       <div className="min-w-0">
@@ -613,13 +804,25 @@ function Stepper({
         {hint && <p className="text-xs text-muted">{hint}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-1" role="group" aria-label={label}>
-        <button type="button" className="tap flex items-center justify-center rounded-full border border-line bg-surface-2 text-ink disabled:opacity-40" aria-label={`Decrease ${label}`} disabled={value <= min} onClick={() => go(-step)}>
+        <button
+          type="button"
+          className="tap flex items-center justify-center rounded-full border border-line bg-surface-2 text-ink disabled:opacity-40"
+          aria-label={`Decrease ${label}`}
+          disabled={value <= min}
+          onClick={() => go(-step)}
+        >
           <Minus size={18} />
         </button>
         <span className="min-w-16 text-center font-medium tabular-nums" aria-live="polite">
           {format(value)}
         </span>
-        <button type="button" className="tap flex items-center justify-center rounded-full border border-line bg-surface-2 text-ink disabled:opacity-40" aria-label={`Increase ${label}`} disabled={value >= max} onClick={() => go(step)}>
+        <button
+          type="button"
+          className="tap flex items-center justify-center rounded-full border border-line bg-surface-2 text-ink disabled:opacity-40"
+          aria-label={`Increase ${label}`}
+          disabled={value >= max}
+          onClick={() => go(step)}
+        >
           <Plus size={18} />
         </button>
       </div>

@@ -11,13 +11,16 @@ describe('plan model', () => {
     expect(again).toEqual(plan);
   });
 
-  it.each(PLANS)('$name plan has seven templates with exactly one free meal and consistent oil budget', ({ plan }) => {
-    const rev = activeRevision(plan);
-    expect(rev.templates.map((t) => t.n).sort()).toEqual([1, 2, 3, 4, 5, 6, 7]);
-    expect(rev.templates.filter(isLibero)).toHaveLength(1);
-    expect(rev.rules.oilPerMealG * 2).toBeLessThanOrEqual(rev.rules.oilPerDayG);
-    expect(rev.templates.find(isLibero)!.n).toBe(rev.rules.pastoLibero.defaultTemplate);
-  });
+  it.each(PLANS)(
+    '$name plan has seven templates with exactly one free meal and consistent oil budget',
+    ({ plan }) => {
+      const rev = activeRevision(plan);
+      expect(rev.templates.map((t) => t.n).sort()).toEqual([1, 2, 3, 4, 5, 6, 7]);
+      expect(rev.templates.filter(isLibero)).toHaveLength(1);
+      expect(rev.rules.oilPerMealG * 2).toBeLessThanOrEqual(rev.rules.oilPerDayG);
+      expect(rev.templates.find(isLibero)!.n).toBe(rev.rules.pastoLibero.defaultTemplate);
+    },
+  );
 
   it.each(PLANS)('$name plan references only catalogue foods', ({ plan }) => {
     const rev = activeRevision(plan);
@@ -29,7 +32,8 @@ describe('plan model', () => {
       }
     }
     for (const l of rev.exchange.lists) for (const e of l.items) if (e.foodId) ids.push(e.foodId);
-    for (const o of [...rev.fixedMenus.colazione, ...rev.fixedMenus.merenda]) for (const it of o.items) ids.push(it.foodId);
+    for (const o of [...rev.fixedMenus.colazione, ...rev.fixedMenus.merenda])
+      for (const it of o.items) ids.push(it.foodId);
     for (const tier of rev.fixedMenus.spuntino.tiers) ids.push(...tier.foodIds);
     const missing = ids.filter((id) => !FOOD_BY_ID.has(id));
     expect(missing).toEqual([]);

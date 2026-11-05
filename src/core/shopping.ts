@@ -6,7 +6,18 @@
  * cover; only the remainder is "to buy", rounded up to known pack sizes. An old check never hides new
  * demand, and manual entries survive regeneration.
  */
-import type { Batch, Dish, Food, ManualItem, Member, PlanRevision, Prefs, Purchase, StoreSection, Week } from './model';
+import type {
+  Batch,
+  Dish,
+  Food,
+  ManualItem,
+  Member,
+  PlanRevision,
+  Prefs,
+  Purchase,
+  StoreSection,
+  Week,
+} from './model';
 import { MAIN_MEALS, mealTemplate, templateFor } from './model';
 import { weekdayIndex } from './dates';
 import { foodMap } from './resolve';
@@ -24,6 +35,8 @@ export interface ShoppingItem {
   purchasedCoveredG: number;
   toBuyG: number;
   buy?: { n: number; unitLabel: string; unitUsableG: number; leftoverG: number };
+  /** What checked purchases already cover, as packs, for display ("bought · 2 × lattina 400 g"). */
+  bought?: { n: number; unitLabel: string };
   /** Count-based display for piece foods without packs ("4 lemons"). */
   pieces?: number;
   why: { date: string; meal: string; dish?: string }[];
@@ -76,7 +89,12 @@ interface Demand {
  * Pure reconciliation: demand − pantry (deducted once) − what checked purchases already cover = to buy,
  * rounded up to the pack. 900 g needed, 100 g in the pantry, 500 g packs → 2 packs, 200 g left over.
  */
-export function reconcile(demandG: number, pantryG: number, coveredG: number, unit?: Food['purchaseUnits'][number]) {
+export function reconcile(
+  demandG: number,
+  pantryG: number,
+  coveredG: number,
+  unit?: Food['purchaseUnits'][number],
+) {
   const pantryDeductedG = Math.min(demandG, Math.max(0, pantryG));
   const purchasedCoveredG = Math.max(0, coveredG);
   const toBuyG = Math.max(0, demandG - pantryDeductedG - purchasedCoveredG);
@@ -84,13 +102,30 @@ export function reconcile(demandG: number, pantryG: number, coveredG: number, un
     unit && toBuyG > 0
       ? (() => {
           const n = Math.ceil(toBuyG / unit.usableG);
-          return { n, unitLabel: unit.label, unitUsableG: unit.usableG, leftoverG: n * unit.usableG - toBuyG };
+          return {
+            n,
+            unitLabel: unit.label,
+            unitUsableG: unit.usableG,
+            leftoverG: n * unit.usableG - toBuyG,
+          };
         })()
       : undefined;
   return { pantryDeductedG, purchasedCoveredG, toBuyG, buy };
 }
 
-export const DEFAULT_STORE_ORDER: StoreSection[] = ['produce', 'bakery', 'meat', 'deli', 'dairy', 'pasta_grains', 'canned', 'oils_condiments', 'breakfast_snacks', 'frozen', 'drinks'];
+export const DEFAULT_STORE_ORDER: StoreSection[] = [
+  'produce',
+  'bakery',
+  'meat',
+  'deli',
+  'dairy',
+  'pasta_grains',
+  'canned',
+  'oils_condiments',
+  'breakfast_snacks',
+  'frozen',
+  'drinks',
+];
 
 const FRESH_SUBGROUPS = new Set<Food['subgroup']>(['bread', 'veg', 'veg_sugary', 'cheese_fresh']);
 
@@ -114,17 +149,35 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
     // Fixed menus: the routine of the person on the plan.
     if (day.colazione) {
       const opt = rev.fixedMenus.colazione.find((o) => o.id === day.colazione);
-      for (const it of opt?.items ?? []) add(it.foodId, toGrams(it.qty, foods.get(it.foodId)), { date: day.date, meal: 'breakfast', dish: opt?.label });
+      for (const it of opt?.items ?? [])
+        add(it.foodId, toGrams(it.qty, foods.get(it.foodId)), {
+          date: day.date,
+          meal: 'breakfast',
+          dish: opt?.label,
+        });
     }
     if (day.merenda) {
       const opt = rev.fixedMenus.merenda.find((o) => o.id === day.merenda);
-      for (const it of opt?.items ?? []) add(it.foodId, toGrams(it.qty, foods.get(it.foodId)), { date: day.date, meal: 'afternoon snack', dish: opt?.label });
+      for (const it of opt?.items ?? [])
+        add(it.foodId, toGrams(it.qty, foods.get(it.foodId)), {
+          date: day.date,
+          meal: 'afternoon snack',
+          dish: opt?.label,
+        });
     }
     if (day.spuntino) {
       const tier = rev.fixedMenus.spuntino.tiers[0];
       const month = Number(day.date.slice(5, 7));
-      const fruit = tier?.foodIds.map((id) => foods.get(id)).find((f) => f && inSeasonMonth(f, month)) ?? (tier?.foodIds[0] ? foods.get(tier.foodIds[0]) : undefined);
-      if (fruit && tier) add(fruit.id, toGrams(tier.qty, fruit), { date: day.date, meal: 'morning snack', dish: 'fruit of your choice' }, true);
+      const fruit =
+        tier?.foodIds.map((id) => foods.get(id)).find((f) => f && inSeasonMonth(f, month)) ??
+        (tier?.foodIds[0] ? foods.get(tier.foodIds[0]) : undefined);
+      if (fruit && tier)
+        add(
+          fruit.id,
+          toGrams(tier.qty, fruit),
+          { date: day.date, meal: 'morning snack', dish: 'fruit of your choice' },
+          true,
+        );
     }
     for (const which of MAIN_MEALS) {
       const meal = day[which];
@@ -137,19 +190,35 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
       for (const mp of plates.members) {
         const portions = batch?.portions.find((p) => p.memberId === mp.memberId)?.n ?? 1;
         for (const l of mp.lines) {
-          add(l.foodId, toGrams(l.qty, foods.get(l.foodId)) * portions, { date: day.date, meal: which, dish: dish?.titleEn });
+          add(l.foodId, toGrams(l.qty, foods.get(l.foodId)) * portions, {
+            date: day.date,
+            meal: which,
+            dish: dish?.titleEn,
+          });
         }
       }
-      // Free vegetables: an editable estimate per person per meal, split across the meal's vegetables.
-      const eaters = plates.members.length || 1;
+      // Free vegetables: an editable estimate per person per meal, split across the meal's vegetables,
+      // multiplied by the portions a batch cooks (its leftover meal adds nothing).
       const vegIds = meal.veg.filter((v) => foods.get(v)?.isFreeVeg);
-      const perVeg = vegIds.length ? (prefs.vegEstimateG * 1.5 * eaters) / vegIds.length : 0;
-      for (const v of vegIds) add(v, Math.round(perVeg / 10) * 10, { date: day.date, meal: which, dish: dish?.titleEn }, true);
-      // Non-staple condiments the dish calls for.
+      const eatersWithPortions =
+        plates.members.reduce(
+          (sum, mp) => sum + (batch?.portions.find((p) => p.memberId === mp.memberId)?.n ?? 1),
+          0,
+        ) || 1;
+      const perVeg = vegIds.length ? (prefs.vegEstimateG * eatersWithPortions) / vegIds.length : 0;
+      for (const v of vegIds)
+        add(v, Math.round(perVeg / 10) * 10, { date: day.date, meal: which, dish: dish?.titleEn }, true);
+      // Non-staple condiments the dish calls for: a typical use per dish.
       for (const c of dish?.condiments ?? []) {
         const f = foods.get(c);
         if (!f || f.staple) continue;
-        const grams = f.pieceG ?? (f.purchaseUnits[0] ? Math.round(f.purchaseUnits[0].usableG / 4) : 0);
+        const grams =
+          f.useG ??
+          (f.pieceG
+            ? Math.min(f.pieceG, 30)
+            : f.purchaseUnits[0]
+              ? Math.round(f.purchaseUnits[0].usableG / 4)
+              : 0);
         if (grams) add(c, grams, { date: day.date, meal: which, dish: dish?.titleEn }, true);
       }
     }
@@ -165,8 +234,17 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
       continue;
     }
     const unit = f.purchaseUnits[0];
-    const { pantryDeductedG, purchasedCoveredG, toBuyG, buy } = reconcile(d.grams, input.pantry[foodId] ?? 0, input.purchases[foodId]?.coveredG ?? 0, unit);
+    const { pantryDeductedG, purchasedCoveredG, toBuyG, buy } = reconcile(
+      d.grams,
+      input.pantry[foodId] ?? 0,
+      input.purchases[foodId]?.coveredG ?? 0,
+      unit,
+    );
     const pieces = !unit && f.pieceG ? Math.ceil(toBuyG / f.pieceG) : undefined;
+    const bought =
+      unit && purchasedCoveredG > 0
+        ? { n: Math.max(1, Math.round(purchasedCoveredG / unit.usableG)), unitLabel: unit.label }
+        : undefined;
     const fresh = prefs.splitFreshRun && FRESH_SUBGROUPS.has(f.subgroup) && weekdayIndex(d.firstNeeded) >= 3;
     items.push({
       key: foodId,
@@ -178,6 +256,7 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
       purchasedCoveredG: Math.round(purchasedCoveredG),
       toBuyG: Math.round(toBuyG),
       ...(buy ? { buy } : {}),
+      ...(bought ? { bought } : {}),
       ...(pieces !== undefined ? { pieces } : {}),
       why: d.why,
       firstNeeded: d.firstNeeded,
@@ -190,11 +269,17 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
   }
   const orders = input.storeOrders ?? {};
   const order = orders[input.store] ?? DEFAULT_STORE_ORDER;
-  const byName = (a: ShoppingItem, b: ShoppingItem) => (foods.get(a.foodId)?.nameIt ?? '').localeCompare(foods.get(b.foodId)?.nameIt ?? '');
+  const byName = (a: ShoppingItem, b: ShoppingItem) =>
+    (foods.get(a.foodId)?.nameIt ?? '').localeCompare(foods.get(b.foodId)?.nameIt ?? '');
   const sections: ShoppingSection[] = order
-    .map((section) => ({ section, items: items.filter((i) => i.section === section && i.run === 'main').sort(byName) }))
+    .map((section) => ({
+      section,
+      items: items.filter((i) => i.section === section && i.run === 'main').sort(byName),
+    }))
     .filter((s) => s.items.length > 0);
-  const freshRun = items.filter((i) => i.run === 'fresh').sort((a, b) => order.indexOf(a.section) - order.indexOf(b.section) || byName(a, b));
+  const freshRun = items
+    .filter((i) => i.run === 'fresh')
+    .sort((a, b) => order.indexOf(a.section) - order.indexOf(b.section) || byName(a, b));
   const manual = [...input.manual].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   return {
     items,
@@ -202,26 +287,41 @@ export function aggregateShopping(input: ShoppingInput): ShoppingList {
     freshRun,
     manual,
     staplesUsed,
-    totals: { lines: items.length + manual.length, checked: items.filter((i) => i.checked || i.haveIt).length + manual.filter((m) => m.checked).length },
+    totals: {
+      lines: items.length + manual.length,
+      checked: items.filter((i) => i.checked || i.haveIt).length + manual.filter((m) => m.checked).length,
+    },
   };
 }
 
 /** Checking a line records what the selected purchase actually covers (including pack rounding). */
-export function purchaseForCheck(item: ShoppingItem, previous: Purchase | undefined, by: string, at: string, opId: string): Purchase {
+export function purchaseForCheck(
+  item: ShoppingItem,
+  previous: Purchase | undefined,
+  by: string,
+  at: string,
+  opId: string,
+): Purchase {
   const extra = item.buy ? item.buy.n * item.buy.unitUsableG : item.toBuyG;
   return { coveredG: (previous?.coveredG ?? 0) + extra, at, by, opId, rev: (previous?.rev ?? 0) + 1 };
 }
 
-export function listAsText(list: ShoppingList, foods: ReadonlyMap<string, Food>, sectionLabel: (s: StoreSection) => string): string {
+export function listAsText(
+  list: ShoppingList,
+  foods: ReadonlyMap<string, Food>,
+  sectionLabel: (s: StoreSection) => string,
+): string {
   const lines: string[] = [];
   for (const s of list.sections) {
     lines.push(`${sectionLabel(s.section)}`);
-    for (const it of s.items) lines.push(`${it.checked || it.haveIt ? '[x]' : '[ ]'} ${describeItem(it, foods)}`);
+    for (const it of s.items)
+      lines.push(`${it.checked || it.haveIt ? '[x]' : '[ ]'} ${describeItem(it, foods)}`);
     lines.push('');
   }
   if (list.freshRun.length) {
     lines.push('Mid-week fresh run');
-    for (const it of list.freshRun) lines.push(`${it.checked || it.haveIt ? '[x]' : '[ ]'} ${describeItem(it, foods)}`);
+    for (const it of list.freshRun)
+      lines.push(`${it.checked || it.haveIt ? '[x]' : '[ ]'} ${describeItem(it, foods)}`);
     lines.push('');
   }
   if (list.manual.length) {
@@ -231,11 +331,18 @@ export function listAsText(list: ShoppingList, foods: ReadonlyMap<string, Food>,
   return lines.join('\n').trim();
 }
 
+export function packText(n: number, unitLabel: string): string {
+  // "1 mela" × 5 → "5 mela"; "mozzarella 125 g" × 3 → "3 × mozzarella 125 g".
+  const bare = unitLabel.replace(/^1\s+/, '');
+  return unitLabel.startsWith('1 ') ? `${n} ${bare}` : `${n} × ${unitLabel}`;
+}
+
 export function describeItem(it: ShoppingItem, foods: ReadonlyMap<string, Food>): string {
   const f = foods.get(it.foodId);
   const name = f?.nameIt ?? it.foodId;
-  if (it.toBuyG === 0) return `${name} (${it.haveIt ? 'already have' : 'bought'})`;
-  if (it.buy) return `${name} — ${it.buy.n} × ${it.buy.unitLabel}`;
-  if (it.pieces) return `${name} — ${it.pieces}`;
+  if (it.toBuyG === 0)
+    return `${name} (${it.haveIt ? 'already have' : it.bought ? `bought · ${packText(it.bought.n, it.bought.unitLabel)}` : 'bought'})`;
+  if (it.buy) return `${name} — ${packText(it.buy.n, it.buy.unitLabel)}`;
+  if (it.pieces) return `${name} — ${it.pieces} ${f?.nameEn ?? 'pieces'}`;
   return `${name} — ${it.toBuyG} g${it.estimate ? ' (estimate)' : ''}`;
 }

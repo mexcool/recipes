@@ -14,7 +14,21 @@ import { PlateLines } from './PlateLines';
 import { Sheet } from './Sheet';
 import { useToast } from './Feedback';
 
-export function MealCard({ ctx, weekId, day, which, hero = false, label }: { ctx: Ctx; weekId: string; day: Day; which: MainMeal; hero?: boolean; label?: string }) {
+export function MealCard({
+  ctx,
+  weekId,
+  day,
+  which,
+  hero = false,
+  label,
+}: {
+  ctx: Ctx;
+  weekId: string;
+  day: Day;
+  which: MainMeal;
+  hero?: boolean;
+  label?: string;
+}) {
   const v = mealView(ctx, day, which);
   const toast = useToast();
   const [open, setOpen] = useState<string | null>(null);
@@ -54,19 +68,33 @@ export function MealCard({ ctx, weekId, day, which, hero = false, label }: { ctx
           )}
           {v.plates && constrained && (hero || open === constrained.id) && (
             <div className="mt-3 rounded-2xl bg-olive-soft/60 p-3">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-olive-2">{constrained.name}</p>
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-olive-2">
+                {constrained.name}
+              </p>
               <PlateLines plates={v.plates} ctx={ctx} memberId={constrained.id} compact />
             </div>
           )}
           {v.plates && (
             <div className="mt-3 flex flex-wrap gap-2">
               {constrained && !hero && (
-                <Chip selected={open === constrained.id} onClick={() => setOpen(open === constrained.id ? null : constrained.id)} tone="olive">
-                  {constrained.name} · {v.plates.members.find((m) => m.memberId === constrained.id)?.lines.filter((l) => l.role !== 'oil').map((l) => l.display).join(' · ')}
+                <Chip
+                  selected={open === constrained.id}
+                  onClick={() => setOpen(open === constrained.id ? null : constrained.id)}
+                  tone="olive"
+                >
+                  {constrained.name} ·{' '}
+                  {v.plates.members
+                    .find((m) => m.memberId === constrained.id)
+                    ?.lines.filter((l) => l.role !== 'oil')
+                    .map((l) => l.display)
+                    .join(' · ')}
                 </Chip>
               )}
               {partner && v.plates.members.some((m) => m.memberId === partner.id) && (
-                <Chip selected={open === partner.id} onClick={() => setOpen(open === partner.id ? null : partner.id)}>
+                <Chip
+                  selected={open === partner.id}
+                  onClick={() => setOpen(open === partner.id ? null : partner.id)}
+                >
                   {partner.name} · ×{v.plates.members.find((m) => m.memberId === partner.id)?.multiplier}
                 </Chip>
               )}
@@ -80,7 +108,8 @@ export function MealCard({ ctx, weekId, day, which, hero = false, label }: { ctx
           )}
           {day[which].veg.length > 0 && (
             <p className="mt-2 text-sm text-muted">
-              {t.roles.veg}: {day[which].veg.map((x) => ctx.foodMap.get(x)?.nameEn ?? x).join(', ')} <span>— as much as you like</span>
+              {t.roles.veg}: {day[which].veg.map((x) => ctx.foodMap.get(x)?.nameEn ?? x).join(', ')}{' '}
+              <span>— as much as you like</span>
             </p>
           )}
 
@@ -97,18 +126,31 @@ export function MealCard({ ctx, weekId, day, which, hero = false, label }: { ctx
                   icon={<RefreshCw size={18} />}
                   onClick={() => {
                     const r = actions.notTonight(weekId, day.date, which);
-                    toast(r.ok ? 'Swapped for another dish with the same foods.' : r.reason, r.ok ? 'ok' : 'error');
+                    toast(
+                      r.ok ? 'Swapped for another dish with the same foods.' : r.reason,
+                      r.ok ? 'ok' : 'error',
+                    );
                   }}
                 >
                   {t.tonight.notTonight}
                 </Button>
               )}
               {v.consumed ? (
-                <Button size="lg" variant="ghost" icon={<Undo2 size={18} />} onClick={() => actions.undoDone(weekId, day.date, which)}>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  icon={<Undo2 size={18} />}
+                  onClick={() => actions.undoDone(weekId, day.date, which)}
+                >
                   {t.tonight.undo}
                 </Button>
               ) : (
-                <Button size="lg" variant="ghost" icon={<Check size={18} />} onClick={() => setDoneOpen(true)}>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  icon={<Check size={18} />}
+                  onClick={() => setDoneOpen(true)}
+                >
                   {t.tonight.done}
                 </Button>
               )}

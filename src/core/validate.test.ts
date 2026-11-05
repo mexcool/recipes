@@ -46,7 +46,9 @@ describe.each(PLANS)('the six starting dishes on the $name plan', ({ plan }) => 
     const v = validateDish(byId('pasta-aubergine-parmigiano'), rev, FOODS);
     expect(v.best?.complete).toBe(false);
     expect(v.best?.unfilled.map((s) => s.role)).toEqual(['protein']);
-    expect(v.best?.issues.some((i) => i.code === 'unfilled' && /protein slot unfilled/.test(i.message))).toBe(true);
+    expect(v.best?.issues.some((i) => i.code === 'unfilled' && /protein slot unfilled/.test(i.message))).toBe(
+      true,
+    );
     expect(v.best?.issues.some((i) => i.code === 'garnish_only')).toBe(true);
     expect(v.summary).toMatch(/protein slot unfilled/);
   });
@@ -60,13 +62,22 @@ describe.each(PLANS)('the six starting dishes on the $name plan', ({ plan }) => 
   });
 
   it('a dish with grams in its steps or a forbidden method is rejected', () => {
-    const bad = { ...byId('caprese-bread'), id: 'bad', steps: ['Use 125 g of mozzarella'], methods: ['frittura'] };
+    const bad = {
+      ...byId('caprese-bread'),
+      id: 'bad',
+      steps: ['Use 125 g of mozzarella'],
+      methods: ['frittura'],
+    };
     const v = validateDish(bad, rev, FOODS);
     expect(v.issues.map((i) => i.code).sort()).toEqual(['grams_in_steps', 'method']);
   });
 
   it('a lunch-only substitution is not accepted at dinner', () => {
-    const lunchBread = { ...byId('bresaola-rocket-panino'), id: 'dinner-bresaola', mealTypes: ['cena' as const] };
+    const lunchBread = {
+      ...byId('bresaola-rocket-panino'),
+      id: 'dinner-bresaola',
+      mealTypes: ['cena' as const],
+    };
     const v = validateDish(lunchBread, rev, FOODS);
     const dinnerFits = v.fits.filter((f) => f.meal === 'cena');
     expect(dinnerFits.every((f) => !f.complete)).toBe(true);
@@ -75,7 +86,15 @@ describe.each(PLANS)('the six starting dishes on the $name plan', ({ plan }) => 
   it('warns when a dish would push a weekly maximum', () => {
     const { week } = okWeek(plan, 8);
     const foods = foodMap(FOODS);
-    const warnings = contextWarnings(byId('caprese-bread'), week, rev, foods, week.days[0]!.date, 'pranzo', FOODS);
+    const warnings = contextWarnings(
+      byId('caprese-bread'),
+      week,
+      rev,
+      foods,
+      week.days[0]!.date,
+      'pranzo',
+      FOODS,
+    );
     expect(Array.isArray(warnings)).toBe(true);
   });
 });

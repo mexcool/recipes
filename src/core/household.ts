@@ -39,7 +39,8 @@ export function migrateHousehold(raw: unknown): Household {
   if (!raw || typeof raw !== 'object') throw new Error('Not a household document');
   let doc = raw as Record<string, unknown>;
   let v = typeof doc.schemaVersion === 'number' ? doc.schemaVersion : 0;
-  if (v > SCHEMA_VERSION) throw new Error(`This file was made by a newer version of the app (schema ${v}). Update the app first.`);
+  if (v > SCHEMA_VERSION)
+    throw new Error(`This file was made by a newer version of the app (schema ${v}). Update the app first.`);
   while (v < SCHEMA_VERSION) {
     const step = MIGRATIONS[v];
     if (!step) throw new Error(`No migration from schema ${v}`);

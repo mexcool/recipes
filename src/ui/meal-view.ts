@@ -22,12 +22,34 @@ export interface MealView {
 
 export function mealView(ctx: Ctx, day: Day, which: MainMeal): MealView {
   const meal = day[which];
-  if (meal.kind === 'libero') return { kind: 'libero', title: t.tonight.free, lines: [], plates: null, foodsLine: '', badges: [{ text: t.tonight.free, tone: 'terra' }], consumed: meal.status === 'consumed', locked: meal.locked };
-  if (meal.kind === 'out') return { kind: 'out', title: t.tonight.out, lines: [], plates: null, foodsLine: '', badges: [{ text: t.tonight.out, tone: 'neutral' }], consumed: meal.status === 'consumed', locked: meal.locked };
+  if (meal.kind === 'libero')
+    return {
+      kind: 'libero',
+      title: t.tonight.free,
+      lines: [],
+      plates: null,
+      foodsLine: '',
+      badges: [{ text: t.tonight.free, tone: 'terra' }],
+      consumed: meal.status === 'consumed',
+      locked: meal.locked,
+    };
+  if (meal.kind === 'out')
+    return {
+      kind: 'out',
+      title: t.tonight.out,
+      lines: [],
+      plates: null,
+      foodsLine: '',
+      badges: [{ text: t.tonight.out, tone: 'neutral' }],
+      consumed: meal.status === 'consumed',
+      locked: meal.locked,
+    };
   const dish = meal.dishId ? ctx.dishes.get(meal.dishId) : undefined;
   const lines = linesFor(ctx, day, which);
   const plates = platesFor(ctx, day, which);
-  const names = lines.filter((l) => l.role !== 'topping').map((l) => ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId);
+  const names = lines
+    .filter((l) => l.role !== 'topping')
+    .map((l) => ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId);
   const vegNames = meal.veg.map((v) => ctx.foodMap.get(v)?.nameEn ?? v);
   const foodsLine = [...names, ...(vegNames.length ? [vegNames.join(', ')] : [])].join(' · ');
   const badges: MealView['badges'] = [];
@@ -55,7 +77,9 @@ function whyToday(ctx: Ctx, day: Day, which: MainMeal, dish: Dish | undefined): 
   if (meal.kind !== 'planned') return undefined;
   if (meal.leftoverOf) return 'Cooked earlier this week — just reheat.';
   const month = monthOf(day.date);
-  const seasonal = meal.veg.map((v) => ctx.foodMap.get(v)).find((f) => f && f.season && f.season.includes(month) && f.season.length < 12);
+  const seasonal = meal.veg
+    .map((v) => ctx.foodMap.get(v))
+    .find((f) => f && f.season && f.season.includes(month) && f.season.length < 12);
   if (seasonal) return `${capitalize(seasonal.nameEn)} is in season.`;
   if (dish?.tags.includes('favourite')) return 'One of your favourites.';
   if (dish?.tags.includes('hint')) return 'Suggested on your plan.';

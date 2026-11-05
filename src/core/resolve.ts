@@ -1,4 +1,15 @@
-import type { Food, MainMeal, Meal, MealTemplate, PlanRevision, Qty, Role, Slot, SlotOption, Subgroup } from './model';
+import type {
+  Food,
+  MainMeal,
+  Meal,
+  MealTemplate,
+  PlanRevision,
+  Qty,
+  Role,
+  Slot,
+  SlotOption,
+  Subgroup,
+} from './model';
 import { mealTemplate, templateFor } from './model';
 
 /** A slot resolved to a concrete food and amount for the person on the plan. */
@@ -12,19 +23,28 @@ export interface ResolvedLine {
 }
 
 export class ChoiceError extends Error {
-  constructor(message: string, public readonly slotId: string) {
+  constructor(
+    message: string,
+    public readonly slotId: string,
+  ) {
     super(message);
   }
 }
 
-export function optionFoodId(opt: SlotOption, slot: Slot, meal: Meal, foods: ReadonlyMap<string, Food>): string | null {
+export function optionFoodId(
+  opt: SlotOption,
+  slot: Slot,
+  meal: Meal,
+  foods: ReadonlyMap<string, Food>,
+): string | null {
   if (opt.kind === 'free') return null;
   if (opt.kind === 'food') return opt.foodId;
   const wc = meal.wildcard[slot.id];
   if (!wc) throw new ChoiceError(`Slot ${slot.id}: a ${opt.subgroup} must be chosen`, slot.id);
   const f = foods.get(wc);
   if (!f) throw new ChoiceError(`Slot ${slot.id}: unknown food ${wc}`, slot.id);
-  if (f.subgroup !== opt.subgroup) throw new ChoiceError(`Slot ${slot.id}: ${wc} is not a ${opt.subgroup}`, slot.id);
+  if (f.subgroup !== opt.subgroup)
+    throw new ChoiceError(`Slot ${slot.id}: ${wc} is not a ${opt.subgroup}`, slot.id);
   return wc;
 }
 
@@ -37,12 +57,25 @@ export function resolveMeal(meal: Meal, mt: MealTemplate, foods: ReadonlyMap<str
     if (!opt) throw new ChoiceError(`Slot ${slot.id}: option ${idx} does not exist`, slot.id);
     const foodId = optionFoodId(opt, slot, meal, foods);
     if (foodId === null || opt.kind === 'free') continue;
-    out.push({ slotId: slot.id, role: slot.role, foodId, qty: opt.qty, optionIndex: idx, ...(opt.kind === 'subgroup' ? { fromSubgroup: opt.subgroup } : {}) });
+    out.push({
+      slotId: slot.id,
+      role: slot.role,
+      foodId,
+      qty: opt.qty,
+      optionIndex: idx,
+      ...(opt.kind === 'subgroup' ? { fromSubgroup: opt.subgroup } : {}),
+    });
   }
   return out;
 }
 
-export function resolveDayMeal(rev: PlanRevision, templateN: number, which: MainMeal, meal: Meal, foods: ReadonlyMap<string, Food>): ResolvedLine[] {
+export function resolveDayMeal(
+  rev: PlanRevision,
+  templateN: number,
+  which: MainMeal,
+  meal: Meal,
+  foods: ReadonlyMap<string, Food>,
+): ResolvedLine[] {
   if (meal.kind !== 'planned') return [];
   const mt = mealTemplate(templateFor(rev, templateN), which);
   if (!mt) return [];

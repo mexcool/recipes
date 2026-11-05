@@ -26,12 +26,29 @@ export function newToken(): string {
 function isOp(x: unknown): x is ListOp {
   if (!x || typeof x !== 'object') return false;
   const o = x as Record<string, unknown>;
-  return typeof o.opId === 'string' && typeof o.weekId === 'string' && typeof o.key === 'string' && typeof o.checked === 'boolean' && typeof o.coveredG === 'number' && typeof o.by === 'string' && typeof o.at === 'string' && typeof o.rev === 'number';
+  return (
+    typeof o.opId === 'string' &&
+    typeof o.weekId === 'string' &&
+    typeof o.key === 'string' &&
+    typeof o.checked === 'boolean' &&
+    typeof o.coveredG === 'number' &&
+    typeof o.by === 'string' &&
+    typeof o.at === 'string' &&
+    typeof o.rev === 'number'
+  );
 }
 
 export function createApp(store: SyncStore) {
   const app = new Hono();
-  app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'OPTIONS'], allowHeaders: ['Content-Type'], maxAge: 86400 }));
+  app.use(
+    '*',
+    cors({
+      origin: '*',
+      allowMethods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+      allowHeaders: ['Content-Type'],
+      maxAge: 86400,
+    }),
+  );
   app.use('*', async (c, next) => {
     await next();
     c.header('Referrer-Policy', 'no-referrer');
@@ -47,11 +64,18 @@ export function createApp(store: SyncStore) {
     if (!body || typeof body !== 'object' || !('doc' in body)) return c.json({ error: 'doc required' }, 400);
     const doc = JSON.stringify((body as { doc: unknown }).doc);
     if (doc.length > MAX_DOC_BYTES) return c.json({ error: 'document too large' }, 413);
-    const schemaVersion = Number(((body as { doc: { schemaVersion?: number } }).doc).schemaVersion ?? 0);
+    const schemaVersion = Number((body as { doc: { schemaVersion?: number } }).doc.schemaVersion ?? 0);
     const token = newToken();
     const id = `hh-${newToken().slice(0, 12)}`;
     const now = new Date().toISOString();
-    await store.create({ id, tokenHash: await sha256Hex(token), doc, schemaVersion, version: 1, updatedAt: now });
+    await store.create({
+      id,
+      tokenHash: await sha256Hex(token),
+      doc,
+      schemaVersion,
+      version: 1,
+      updatedAt: now,
+    });
     return c.json({ token, id, version: 1 }, 201);
   });
 
@@ -79,14 +103,33 @@ export function createApp(store: SyncStore) {
     const row = await withHousehold(c.req.param('t'));
     if (!row) return c.json({ error: 'not found' }, 404);
     const body = await readJson(c.req.raw);
-    if (!body || typeof body !== 'object' || !('doc' in body) || typeof (body as { baseVersion?: unknown }).baseVersion !== 'number') return c.json({ error: 'baseVersion and doc required' }, 400);
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      !('doc' in body) ||
+      typeof (body as { baseVersion?: unknown }).baseVersion !== 'number'
+    )
+      return c.json({ error: 'baseVersion and doc required' }, 400);
     const { baseVersion, doc } = body as { baseVersion: number; doc: { schemaVersion?: number } };
     const json = JSON.stringify(doc);
     if (json.length > MAX_DOC_BYTES) return c.json({ error: 'document too large' }, 413);
-    const ok = await store.updateDoc(row.id, baseVersion, json, Number(doc.schemaVersion ?? row.schemaVersion), new Date().toISOString());
+    const ok = await store.updateDoc(
+      row.id,
+      baseVersion,
+      json,
+      Number(doc.schemaVersion ?? row.schemaVersion),
+      new Date().toISOString(),
+    );
     if (!ok) {
       const fresh = await withHousehold(c.req.param('t'));
-      return c.json({ error: 'conflict', version: fresh?.version ?? row.version, doc: fresh ? JSON.parse(fresh.doc) : undefined }, 409);
+      return c.json(
+        {
+          error: 'conflict',
+          version: fresh?.version ?? row.version,
+          doc: fresh ? JSON.parse(fresh.doc) : undefined,
+        },
+        409,
+      );
     }
     return c.json({ version: baseVersion + 1 });
   });
@@ -95,15 +138,24 @@ export function createApp(store: SyncStore) {
     const row = await withHousehold(c.req.param('t'));
     if (!row) return c.json({ error: 'not found' }, 404);
     const body = await readJson(c.req.raw);
-    const ops = body && typeof body === 'object' && Array.isArray((body as { ops?: unknown }).ops) ? (body as { ops: unknown[] }).ops : null;
-    if (!ops || ops.length > 500 || !ops.every(isOp)) return c.json({ error: 'ops must be an array of at most 500 valid operations' }, 400);
+    const ops =
+      body && typeof body === 'object' && Array.isArray((body as { ops?: unknown }).ops)
+        ? (body as { ops: unknown[] }).ops
+        : null;
+    if (!ops || ops.length > 500 || !ops.every(isOp))
+      return c.json({ error: 'ops must be an array of at most 500 valid operations' }, 400);
     const conflicts: { opId: string; winner: ListOp }[] = [];
     for (const op of ops) {
       const latest = await store.latestOpFor(row.id, op.weekId, op.key);
-      if (latest && latest.opId !== op.opId && latest.at > op.at && latest.checked !== op.checked) conflicts.push({ opId: op.opId, winner: latest });
+      if (latest && latest.opId !== op.opId && latest.at > op.at && latest.checked !== op.checked)
+        conflicts.push({ opId: op.opId, winner: latest });
     }
     const applied = await store.insertOps(row.id, ops);
-    return c.json({ applied: applied.map((o) => o.opId), conflicts, lastSeq: applied.length ? applied[applied.length - 1]!.seq : undefined });
+    return c.json({
+      applied: applied.map((o) => o.opId),
+      conflicts,
+      lastSeq: applied.length ? applied[applied.length - 1]!.seq : undefined,
+    });
   });
 
   app.post('/h/:t/rotate', async (c) => {
