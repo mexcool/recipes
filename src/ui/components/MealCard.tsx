@@ -1,20 +1,32 @@
 import { clsx } from 'clsx';
-import { Link } from '@tanstack/react-router';
-import { ChefHat, Check, Clock, MoreHorizontal, RefreshCw, Undo2 } from 'lucide-react';
+import { Check, ChefHat, Clock, MoreHorizontal, Sparkles, Undo2 } from 'lucide-react';
 import { useState } from 'react';
-import type { Day, MainMeal } from '@/core/model';
+import { isConsumed } from '@/core/consumed';
 import { WEEKDAY_LONG, weekdayIndex } from '@/core/dates';
-import type { Ctx } from '@/store/selectors';
+import type { Day, MainMeal } from '@/core/model';
+import type { Plates } from '@/core/plates';
 import { actions } from '@/store/actions';
-import { t } from '@/i18n/en';
+import { useNow } from '@/store/now';
+import type { Ctx } from '@/store/selectors';
+import { methodLabel, t } from '@/i18n/en';
 import { mealView } from '../meal-view';
+import { Button, ButtonLink } from './Button';
 import { Badge, Chip } from './Chip';
-import { Button } from './Button';
+import { useToast } from './Feedback';
+import { MealSheet, type SheetPanel } from './MealSheet';
 import { PlateLines } from './PlateLines';
 import { Sheet } from './Sheet';
-import { useToast } from './Feedback';
-import { MealSheet } from './MealSheet';
-import { useNow } from '@/store/now';
+
+/** "pasta 70 g · canned chickpeas 35 g": one person's plate on a line, oil and toppings left out. */
+function plateSummary(plates: Plates, memberId: string, ctx: Ctx): string {
+  return (
+    plates.members
+      .find((m) => m.memberId === memberId)
+      ?.lines.filter((l) => l.role !== 'oil' && l.role !== 'topping')
+      .map((l) => `${ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId} ${l.display}`)
+      .join(' · ') ?? ''
+  );
+}
 
 export function MealCard({
   ctx,
@@ -33,14 +45,42 @@ export function MealCard({
 }) {
   const v = mealView(ctx, day, which);
   const toast = useToast();
+  const now = useNow();
   const [open, setOpen] = useState<string | null>(null);
   const [doneOpen, setDoneOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const now = useNow();
+  const [more, setMore] = useState<{ panel?: SheetPanel; notice?: string } | null>(null);
   const week = ctx.h.weeks.find((w) => w.id === weekId);
   const constrained = ctx.h.members.find((m) => m.constrained);
   const partner = ctx.h.members.find((m) => !m.constrained);
   const dayLabel = label ?? `${WEEKDAY_LONG[weekdayIndex(day.date)]} · ${t.meals[which]}`;
+  /** Eaten by the clock as well as by status: lunch after 15:00, dinner after 22:00, past days always. */
+  const consumed = isConsumed(day[which], day.date, which, now);
+
+  const notTonight = () => {
+    const r = actions.notTonight(weekId, day.date, which);
+    if (r.ok) toast('Swapped for another dish with the same foods.', 'ok');
+    // Nothing else fits these foods: open the sheet on the ingredient panel, where the real choices are.
+    else setMore({ panel: 'ingredient', notice: r.reason });
+  };
+  const planAgain = () => {
+    const r = actions.markIn(weekId, day.date, which);
+    toast(r.ok ? 'Back on the plan.' : r.reason, r.ok ? 'ok' : 'error');
+  };
+
+  const doneOrUndo = v.consumed ? (
+    <Button
+      size="md"
+      variant="ghost"
+      icon={<Undo2 size={18} />}
+      onClick={() => actions.undoDone(weekId, day.date, which)}
+    >
+      {t.tonight.undo}
+    </Button>
+  ) : (
+    <Button size="md" icon={<Check size={18} />} onClick={() => setDoneOpen(true)}>
+      {t.tonight.done}
+    </Button>
+  );
 
   return (
     <section className={clsx('card', hero ? 'p-5' : 'p-4')} aria-label={`${dayLabel}: ${v.title}`}>
@@ -60,6 +100,11 @@ export function MealCard({
       {v.whyToday && <p className="mt-1 text-sm text-olive-2">{v.whyToday}</p>}
 
       {v.kind === 'libero' && <p className="mt-2 text-ink-2">{t.tonight.freeHint}</p>}
+      {v.kind === 'out' && hero && (
+        <p className="mt-2 text-ink-2">
+          {consumed ? 'Nothing was cooked or bought for this one.' : 'Nothing to cook or buy tonight.'}
+        </p>
+      )}
 
       {v.kind === 'planned' && (
         <>
@@ -68,7 +113,7 @@ export function MealCard({
               <span className="inline-flex items-center gap-1">
                 <Clock size={14} /> {v.dish.minutes} {t.recipes.minutes}
               </span>
-              {v.dish.methods.length > 0 && <span>{v.dish.methods.join(' · ')}</span>}
+              {v.dish.methods.length > 0 && <span>{v.dish.methods.map(methodLabel).join(' · ')}</span>}
             </div>
           )}
           {v.plates && constrained && (hero || open === constrained.id) && (
@@ -86,13 +131,11 @@ export function MealCard({
                   selected={open === constrained.id}
                   onClick={() => setOpen(open === constrained.id ? null : constrained.id)}
                   tone="olive"
+                  className="max-w-full text-left"
                 >
-                  {constrained.name} ·{' '}
-                  {v.plates.members
-                    .find((m) => m.memberId === constrained.id)
-                    ?.lines.filter((l) => l.role !== 'oil')
-                    .map((l) => l.display)
-                    .join(' · ')}
+                  <span>
+                    {constrained.name} · {plateSummary(v.plates, constrained.id, ctx)}
+                  </span>
                 </Chip>
               )}
               {partner && v.plates.members.some((m) => m.memberId === partner.id) && (
@@ -117,61 +160,47 @@ export function MealCard({
               <span>— as much as you like</span>
             </p>
           )}
-
-          {hero && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/cook/$date/$meal" params={{ date: day.date, meal: which }} className="contents">
-                <Button variant="primary" size="lg" icon={<ChefHat size={18} />}>
-                  {t.tonight.cook}
-                </Button>
-              </Link>
-              {!v.consumed && (
-                <Button
-                  size="lg"
-                  icon={<RefreshCw size={18} />}
-                  onClick={() => {
-                    const r = actions.notTonight(weekId, day.date, which);
-                    toast(
-                      r.ok ? 'Swapped for another dish with the same foods.' : r.reason,
-                      r.ok ? 'ok' : 'error',
-                    );
-                  }}
-                >
-                  {t.tonight.notTonight}
-                </Button>
-              )}
-              {v.consumed ? (
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  icon={<Undo2 size={18} />}
-                  onClick={() => actions.undoDone(weekId, day.date, which)}
-                >
-                  {t.tonight.undo}
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  icon={<Check size={18} />}
-                  onClick={() => setDoneOpen(true)}
-                >
-                  {t.tonight.done}
-                </Button>
-              )}
-              <Button
-                size="lg"
-                variant="ghost"
-                icon={<MoreHorizontal size={18} />}
-                onClick={() => setMoreOpen(true)}
-                aria-label="More options"
-              >
-                More
-              </Button>
-            </div>
-          )}
         </>
       )}
+
+      {hero && (
+        /* One row at 360 px: Cook, one secondary action, and the sheet behind "More options". Done lives
+           in the sheet (and on the Cook screen) until the meal counts as eaten, then it takes the row. */
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {v.kind === 'planned' && (
+            <ButtonLink
+              to="/cook/$date/$meal"
+              params={{ date: day.date, meal: which }}
+              variant="primary"
+              size="md"
+              icon={<ChefHat size={18} />}
+              className="flex-1"
+            >
+              {t.tonight.cook}
+            </ButtonLink>
+          )}
+          {v.kind === 'planned' && !consumed && (
+            <Button size="md" onClick={notTonight}>
+              {t.tonight.notTonight}
+            </Button>
+          )}
+          {(v.kind === 'libero' || (v.kind === 'planned' && consumed)) && doneOrUndo}
+          {v.kind === 'out' && !consumed && (
+            <Button size="md" icon={<Sparkles size={18} />} onClick={planAgain}>
+              Plan it again
+            </Button>
+          )}
+          <Button
+            size="md"
+            variant="ghost"
+            icon={<MoreHorizontal size={20} />}
+            onClick={() => setMore({})}
+            aria-label="More options"
+            aria-haspopup="dialog"
+          />
+        </div>
+      )}
+
       {week && (
         <MealSheet
           ctx={ctx}
@@ -179,8 +208,10 @@ export function MealCard({
           date={day.date}
           which={which}
           now={now}
-          open={moreOpen}
-          onClose={() => setMoreOpen(false)}
+          open={!!more}
+          initialPanel={more?.panel}
+          notice={more?.notice}
+          onClose={() => setMore(null)}
         />
       )}
       <Sheet open={doneOpen} onClose={() => setDoneOpen(false)} title={t.tonight.done}>

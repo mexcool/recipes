@@ -1,8 +1,60 @@
 import { X } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { t } from '@/i18n/en';
 
-/** Bottom sheet: the one modal pattern in the app. Closes on backdrop tap, Escape, or the close button. */
+// ---- Open-sheet registry: the toast stack reads it to keep out of the way of an open sheet. ---------
+let openSheets = 0;
+const listeners = new Set<() => void>();
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+function bump(delta: number) {
+  openSheets += delta;
+  for (const notify of listeners) notify();
+}
+/** True while any sheet is open. */
+export function useSheetOpen(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => openSheets > 0,
+    () => false,
+  );
+}
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Keep Tab and Shift+Tab cycling inside the panel. */
+function trapTab(e: KeyboardEvent, panel: HTMLElement) {
+  const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (el) => !el.closest('[hidden]'),
+  );
+  if (items.length === 0) {
+    e.preventDefault();
+    panel.focus();
+    return;
+  }
+  const first = items[0]!;
+  const last = items[items.length - 1]!;
+  const active = document.activeElement;
+  const inside = active instanceof HTMLElement && active !== panel && panel.contains(active);
+  const leaving = e.shiftKey ? !inside || active === first : !inside || active === last;
+  if (leaving) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  }
+}
+
+/**
+ * Bottom sheet: the one modal pattern in the app. It renders in a portal over everything; while it is
+ * open the page behind it is inert (no Tab, no taps, hidden from screen readers), Tab cycles inside,
+ * body scroll is locked, and Escape, the backdrop or the close button close it. On close, focus goes
+ * back to the control that opened it.
+ */
 export function Sheet({
   open,
   onClose,
@@ -15,20 +67,45 @@ export function Sheet({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Callers pass a fresh arrow every render; keep the latest without re-running the modal setup.
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
+    const panel = ref.current;
+    if (!panel) return;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const behind = Array.from(document.querySelectorAll<HTMLElement>('main, nav')).filter(
+      (el) => !el.hasAttribute('inert'),
+    );
+    for (const el of behind) el.setAttribute('inert', '');
+    bump(1);
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    ref.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeRef.current();
+      } else if (e.key === 'Tab') {
+        trapTab(e, panel);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    panel.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      for (const el of behind) el.removeAttribute('inert');
+      bump(-1);
+      trigger?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
+
   if (!open) return null;
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40"
       onClick={onClose}
@@ -56,6 +133,7 @@ export function Sheet({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

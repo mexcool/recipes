@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useSheetOpen } from './Sheet';
 
 type Tone = 'info' | 'ok' | 'error';
 interface Toast {
@@ -8,6 +9,9 @@ interface Toast {
   text: string;
   tone: Tone;
 }
+
+/** Repeated taps never pile up: the same text again replaces the one showing, and two stay visible at most. */
+const MAX_VISIBLE = 2;
 
 const ToastCtx = createContext<(text: string, tone?: Tone) => void>(() => {});
 
@@ -17,9 +21,14 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // A sheet sits at the bottom of the screen; while one is open the stack moves to the top instead of
+  // covering the sheet's content.
+  const sheetOpen = useSheetOpen();
   const push = useCallback((text: string, tone: Tone = 'info') => {
     const id = Date.now() + Math.random();
-    setToasts((ts) => [...ts, { id, text, tone }]);
+    setToasts((ts) =>
+      [...ts.filter((x) => !(x.text === text && x.tone === tone)), { id, text, tone }].slice(-MAX_VISIBLE),
+    );
     setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== id)), tone === 'error' ? 6000 : 3000);
   }, []);
   const value = useMemo(() => push, [push]);
@@ -27,17 +36,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastCtx.Provider value={value}>
       {children}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4"
+        className={clsx(
+          'pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-4',
+          sheetOpen ? 'safe-top top-2' : 'bottom-20',
+        )}
         aria-live="polite"
       >
         {toasts.map((x) => (
           <div
             key={x.id}
             className={clsx(
-              'pointer-events-auto flex max-w-md items-start gap-2 rounded-2xl px-4 py-3 text-sm shadow-lg',
+              'flex max-w-md items-start gap-2 rounded-2xl px-4 py-3 text-sm shadow-lg',
+              // Over a sheet the stack sits on its title row: let taps reach the close button beneath.
+              !sheetOpen && 'pointer-events-auto',
               x.tone === 'info' && 'bg-ink text-cream',
-              x.tone === 'ok' && 'bg-ok text-white',
-              x.tone === 'error' && 'bg-terra text-white',
+              x.tone === 'ok' && 'bg-ok text-on-ok',
+              x.tone === 'error' && 'bg-terra text-on-terra',
             )}
           >
             {x.tone === 'ok' ? (

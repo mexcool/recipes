@@ -22,7 +22,7 @@ test('phone B joins phone A; ticks travel both ways; a plan change is pulled', a
   const a = await phone(browser);
   await a.goto('/');
   await a.getByRole('button', { name: /Plan this week/ }).click();
-  await expect(a.getByRole('button', { name: /^Cook$/ })).toBeVisible();
+  await expect(a.getByRole('link', { name: /^Cook$/ })).toBeVisible();
   const firstLunchA = await a.getByRole('heading', { level: 2 }).first().textContent();
 
   // Connect A.
@@ -42,7 +42,7 @@ test('phone B joins phone A; ticks travel both ways; a plan change is pulled', a
   await expect(b.getByText(new URL(SYNC_URL!).host)).toBeVisible();
   expect(await b.evaluate(() => window.location.hash)).toBe('#/join');
   await b.getByRole('button', { name: /Join and replace my data/ }).click();
-  await expect(b.getByRole('button', { name: /^Cook$/ })).toBeVisible();
+  await expect(b.getByRole('link', { name: /^Cook$/ })).toBeVisible();
   const firstLunchB = await b.getByRole('heading', { level: 2 }).first().textContent();
   expect(firstLunchB).toBe(firstLunchA);
   await b.goBack();

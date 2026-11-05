@@ -24,7 +24,7 @@ test('plan, swap, add a dish, shop offline, cook', async ({ page, context }) => 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Stasera' })).toBeVisible();
   await page.getByRole('button', { name: /Plan this week/ }).click();
-  await expect(page.getByRole('button', { name: /^Cook$/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /^Cook$/ })).toBeVisible();
   await expect(page.getByText(/oil for this meal/)).toBeVisible();
   await shot(page, 'tonight');
 
@@ -98,7 +98,7 @@ test('plan, swap, add a dish, shop offline, cook', async ({ page, context }) => 
     .click();
   await page
     .getByRole('group', { name: 'Cooking' })
-    .getByRole('button', { name: /bollitura/ })
+    .getByRole('button', { name: /boiled/ })
     .click();
   await page
     .locator('textarea')
@@ -142,9 +142,9 @@ test('plan, swap, add a dish, shop offline, cook', async ({ page, context }) => 
 
   // --- Cook view ---------------------------------------------------------------------------------------
   await page.goto('/');
-  await page.getByRole('button', { name: /^Cook$/ }).click();
+  await page.getByRole('link', { name: /^Cook$/ }).click();
   await expect(page.getByRole('heading', { name: 'Steps' })).toBeVisible();
-  await expect(page.getByText('Cook together')).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Pot' })).toBeVisible();
   await shot(page, 'cook');
   await page.getByRole('button', { name: /Done 👍/ }).click();
   await expect(page.getByText(/Marked as eaten/)).toBeVisible();

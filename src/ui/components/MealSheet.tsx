@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { clsx } from 'clsx';
 import {
   CalendarDays,
@@ -10,6 +9,7 @@ import {
   Plus,
   RefreshCw,
   Replace,
+  Sparkles,
   Undo2,
   Utensils,
 } from 'lucide-react';
@@ -24,10 +24,10 @@ import { resolveMeal } from '@/core/resolve';
 import type { Ctx } from '@/store/selectors';
 import type { ActionResult } from '@/store/actions';
 import { actions } from '@/store/actions';
-import { t } from '@/i18n/en';
+import { methodLabel, t } from '@/i18n/en';
 import { mealView, type MealView } from '../meal-view';
 import { Badge, Chip } from './Chip';
-import { Button } from './Button';
+import { Button, ButtonLink } from './Button';
 import { PlateLines } from './PlateLines';
 import { Sheet } from './Sheet';
 import { useToast } from './Feedback';
@@ -36,6 +36,9 @@ const MULT_MIN = 0.5;
 const MULT_MAX = 2.5;
 
 type Report = (r: ActionResult, okText: string) => boolean;
+
+/** The expandable panels under "Something else?". */
+export type SheetPanel = 'ingredient' | 'move';
 
 /** "Thu 5": the label of a day chip. */
 export function dayChipLabel(iso: string): string {
@@ -59,6 +62,8 @@ export function MealSheet({
   now,
   open,
   onClose,
+  initialPanel,
+  notice,
 }: {
   ctx: Ctx;
   week: Week;
@@ -67,12 +72,27 @@ export function MealSheet({
   now: Now;
   open: boolean;
   onClose: () => void;
+  /** Open with this panel expanded (e.g. after "Not tonight" found nothing else to swap in). */
+  initialPanel?: SheetPanel | undefined;
+  /** A line explaining why the sheet opened, shown above the options. */
+  notice?: string | undefined;
 }) {
   const day = week.days.find((d) => d.date === date);
   const title = day ? `${WEEKDAY_LONG[weekdayIndex(day.date)]} · ${t.meals[which]}` : t.meals[which];
   return (
     <Sheet open={open && !!day} onClose={onClose} title={title}>
-      {day && <Body ctx={ctx} week={week} day={day} which={which} now={now} onClose={onClose} />}
+      {day && (
+        <Body
+          ctx={ctx}
+          week={week}
+          day={day}
+          which={which}
+          now={now}
+          onClose={onClose}
+          initialPanel={initialPanel}
+          notice={notice}
+        />
+      )}
     </Sheet>
   );
 }
@@ -84,6 +104,8 @@ function Body({
   which,
   now,
   onClose,
+  initialPanel,
+  notice,
 }: {
   ctx: Ctx;
   week: Week;
@@ -91,9 +113,11 @@ function Body({
   which: MainMeal;
   now: Now;
   onClose: () => void;
+  initialPanel?: SheetPanel | undefined;
+  notice?: string | undefined;
 }) {
   const toast = useToast();
-  const [panel, setPanel] = useState<'ingredient' | 'move' | null>(null);
+  const [panel, setPanel] = useState<SheetPanel | null>(initialPanel ?? null);
   const meal = day[which];
   const v = mealView(ctx, day, which);
   const weekId = week.id;
@@ -121,25 +145,65 @@ function Body({
     </Button>
   );
 
+  const doneButton = v.consumed ? (
+    <Button
+      size="lg"
+      variant="ghost"
+      icon={<Undo2 size={18} />}
+      onClick={() => actions.undoDone(weekId, day.date, which)}
+    >
+      {t.tonight.undo}
+    </Button>
+  ) : (
+    <Button
+      size="lg"
+      icon={<Check size={18} />}
+      onClick={() => {
+        actions.markDone(weekId, day.date, which);
+        onClose();
+      }}
+    >
+      {t.tonight.done}
+    </Button>
+  );
+
   if (v.kind === 'libero') {
     return (
       <div className="space-y-4">
         <Head v={v} badges={badges} />
         <p className="text-ink-2">{t.tonight.freeHint}</p>
         <FreeMealMover week={week} onMoved={onClose} />
-        <div className="flex flex-wrap gap-2">{lockButton}</div>
+        <div className="flex flex-wrap gap-2">
+          {doneButton}
+          {lockButton}
+        </div>
       </div>
     );
   }
 
   if (v.kind === 'out') {
+    // Eating out is reversible until the meal has passed: back to the plan's own options and a dish.
     return (
       <div className="space-y-4">
         <Head v={v} badges={badges} />
         <p className="text-ink-2">
-          Nothing to cook or buy for this meal. Regenerate the week to plan it again.
+          {consumed
+            ? 'Nothing was cooked or bought for this meal.'
+            : 'Nothing to cook or buy for this meal. Changed your mind? Plan it again and Stasera picks a dish that fits the day.'}
         </p>
-        <div className="flex flex-wrap gap-2">{lockButton}</div>
+        <div className="flex flex-wrap gap-2">
+          {!consumed && (
+            <Button
+              variant="primary"
+              size="lg"
+              icon={<Sparkles size={18} />}
+              onClick={() => report(actions.markIn(weekId, day.date, which), 'Back on the plan.')}
+            >
+              Plan it again
+            </Button>
+          )}
+          {lockButton}
+        </div>
       </div>
     );
   }
@@ -180,33 +244,17 @@ function Body({
 
       <div className="flex flex-wrap gap-2">
         {!consumed && (
-          <Link to="/cook/$date/$meal" params={{ date: day.date, meal: which }} className="contents">
-            <Button variant="primary" size="lg" icon={<ChefHat size={18} />}>
-              {t.tonight.cook}
-            </Button>
-          </Link>
-        )}
-        {v.consumed ? (
-          <Button
+          <ButtonLink
+            to="/cook/$date/$meal"
+            params={{ date: day.date, meal: which }}
+            variant="primary"
             size="lg"
-            variant="ghost"
-            icon={<Undo2 size={18} />}
-            onClick={() => actions.undoDone(weekId, day.date, which)}
+            icon={<ChefHat size={18} />}
           >
-            {t.tonight.undo}
-          </Button>
-        ) : (
-          <Button
-            size="lg"
-            icon={<Check size={18} />}
-            onClick={() => {
-              actions.markDone(weekId, day.date, which);
-              onClose();
-            }}
-          >
-            {t.tonight.done}
-          </Button>
+            {t.tonight.cook}
+          </ButtonLink>
         )}
+        {doneButton}
         {lockButton}
       </div>
 
@@ -218,6 +266,7 @@ function Body({
         )
       ) : (
         <section aria-label="Change this meal">
+          {notice && <p className="mb-3 rounded-xl bg-surface-2 p-3 text-sm text-ink-2">{notice}</p>}
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Something else?</p>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -349,7 +398,7 @@ function Head({ v, badges }: { v: MealView; badges: MealView['badges'] }) {
       {v.dish && (
         <p className="mt-1 text-sm text-muted">
           {v.dish.minutes} {t.recipes.minutes}
-          {v.dish.methods.length > 0 && ` · ${v.dish.methods.join(' · ')}`}
+          {v.dish.methods.length > 0 && ` · ${v.dish.methods.map(methodLabel).join(' · ')}`}
         </p>
       )}
     </div>
@@ -426,7 +475,7 @@ function IngredientPanel({
                     aria-expanded={opt.kind === 'subgroup' && selectable ? subIndex === i : undefined}
                   >
                     {optionName(ctx, opt)}
-                    <span className={clsx('tabular-nums', selected ? 'text-white/80' : 'text-muted')}>
+                    <span className={clsx('tabular-nums', selected ? 'text-on-olive/80' : 'text-muted')}>
                       · {amountOf(opt)}
                     </span>
                   </Chip>

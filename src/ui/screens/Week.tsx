@@ -11,6 +11,7 @@ import { useNow } from '@/store/now';
 import { actions } from '@/store/actions';
 import { ctxOf, rulesFor, weekFor, type Ctx } from '@/store/selectors';
 import { t } from '@/i18n/en';
+import { longDate, shortDate } from '../labels';
 import { mealView } from '../meal-view';
 import { Button } from '../components/Button';
 import { Card, SectionTitle } from '../components/Card';
@@ -237,11 +238,9 @@ function DayCard({
         </h2>
         <div className="flex shrink-0 items-center gap-1">
           {today && <Badge tone="olive">{t.common.today}</Badge>}
-          <span title={hint}>
-            <Badge>
-              {t.week.day} {day.template}
-            </Badge>
-          </span>
+          <Badge>
+            {t.week.day} {day.template}
+          </Badge>
         </div>
       </div>
       <p className="mt-1 text-sm leading-snug text-muted">
@@ -252,6 +251,11 @@ function DayCard({
       </p>
       {isWeekend(day.date) && !day.spuntino && (
         <p className="text-sm leading-snug text-muted">{t.tonight.noSnack}</p>
+      )}
+      {hint && (
+        <p className="mt-1 text-sm leading-snug text-muted">
+          The plan's example for {t.week.day.toLowerCase()} {day.template}: {hint}
+        </p>
       )}
       <div className="mt-2 divide-y divide-line border-t border-line">
         {MAIN_MEALS.map((which) => (
@@ -357,18 +361,6 @@ function RuleRow({ r }: { r: RuleResult }) {
       )}
     </li>
   );
-}
-
-function shortDate(iso: string): string {
-  return new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-}
-
-function longDate(iso: string): string {
-  return new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
 }
 
 function rangeLabel(monday: string): string {

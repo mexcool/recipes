@@ -1,4 +1,4 @@
-import { Link, useParams } from '@tanstack/react-router';
+import { Link, useCanGoBack, useParams, useRouter } from '@tanstack/react-router';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { MainMeal } from '@/core/model';
@@ -8,7 +8,8 @@ import { useHousehold } from '@/store/store';
 import { useNow } from '@/store/now';
 import { actions } from '@/store/actions';
 import { ctxOf, dayOf, linesFor, platesFor, renderStep, weekFor } from '@/store/selectors';
-import { t } from '@/i18n/en';
+import { methodLabel, t } from '@/i18n/en';
+import { shortDayDate } from '../labels';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/Feedback';
@@ -57,7 +58,7 @@ export function CookScreen() {
         <BackLink />
         <div>
           <p className="text-xs uppercase tracking-wide text-muted">
-            {t.meals[meal]} · {date}
+            {t.meals[meal]} · {shortDayDate(date)}
           </p>
           <h1 className="text-2xl font-semibold leading-tight">{titles ? titles.en : t.tonight.noDish}</h1>
           {titles?.it && <p className="text-sm text-muted">{titles.it}</p>}
@@ -112,7 +113,7 @@ export function CookScreen() {
           <p className="text-ink-2">
             No recipe attached. Cook{' '}
             {lines.map((l) => ctx.foodMap.get(l.foodId)?.nameEn ?? l.foodId).join(', ')} with the vegetables,
-            using the allowed methods ({ctx.rev.rules.methods.join(', ')}).
+            using the allowed methods ({ctx.rev.rules.methods.map(methodLabel).join(', ')}).
           </p>
         )}
         {mt?.note && <p className="mt-3 rounded-xl bg-surface-2 p-3 text-sm text-ink-2">{mt.note}</p>}
@@ -122,7 +123,7 @@ export function CookScreen() {
         <Card className="text-sm text-muted">
           {t.recipes.condiments}:{' '}
           {dish.condiments.map((c) => ctx.foodMap.get(c)?.nameEn ?? c).join(', ') || '—'} ·{' '}
-          {t.recipes.methods}: {dish.methods.join(', ') || '—'}
+          {t.recipes.methods}: {dish.methods.map(methodLabel).join(', ') || '—'}
         </Card>
       )}
 
@@ -156,13 +157,20 @@ export function CookScreen() {
   );
 }
 
+/** Back to wherever Cook was opened from (Tonight or a Week sheet); straight to Tonight on a deep link. */
 function BackLink() {
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
+  const cls = 'tap flex items-center justify-center rounded-full text-ink-2 hover:bg-surface-2';
+  if (canGoBack) {
+    return (
+      <button type="button" onClick={() => router.history.back()} className={cls} aria-label={t.common.back}>
+        <ArrowLeft size={22} />
+      </button>
+    );
+  }
   return (
-    <Link
-      to="/"
-      className="tap flex items-center justify-center rounded-full text-ink-2 hover:bg-surface-2"
-      aria-label={t.common.back}
-    >
+    <Link to="/" className={cls} aria-label={t.common.back}>
       <ArrowLeft size={22} />
     </Link>
   );
