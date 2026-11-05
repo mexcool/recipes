@@ -61,8 +61,13 @@ describe('sync helpers', () => {
       },
     ];
     const folded = foldOps({}, ops);
-    expect(folded.w?.pasta).toBeUndefined();
+    // The newest op is the uncheck: a tombstone stays so that an older check cannot resurrect it.
+    expect(folded.w?.pasta?.coveredG).toBe(0);
+    expect(folded.w?.pasta?.opId).toBe('b');
     expect(folded.w?.rice?.coveredG).toBe(1000);
+    // Ops may arrive in separate pulls: the tombstone protects across rounds too.
+    const pull1 = foldOps({}, [ops[0]!, ops[1]!]);
+    expect(foldOps(pull1, [ops[2]!]).w?.pasta?.coveredG).toBe(0);
     const older = foldOps(
       { w: { pasta: { coveredG: 500, at: '2026-11-08T11:00:00Z', by: 'g', opId: 'z', rev: 3 } } },
       ops,

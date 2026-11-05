@@ -1,10 +1,14 @@
 /**
  * Two-phone sync over the optional companion service (worker/). Local-first: everything works without
- * it. When configured, the client (1) pushes queued shopping-check operations, (2) pushes the document
- * with compare-and-set, (3) pulls the newer document and any operations, folding checks last-writer-wins.
- * The capability token lives only in the household document on the phone and in the URL of requests.
+ * it. When configured, one round (1) pushes queued shopping-check operations, (2) pushes the document
+ * with compare-and-set if it changed, (3) pulls a newer document and any operations, folding checks
+ * last-writer-wins. The capability token lives only in the household document on the phone and in the
+ * Authorization header of requests; it is never exported, never in a URL path, never in the body.
+ *
+ * A round that finds nothing new changes nothing locally, so it never triggers another round.
  */
 import type { Household, Purchase } from '@/core/model';
+import { SCHEMA_VERSION } from '@/core/model';
 import { migrateHousehold } from '@/core/household';
 import { db, type OutboxOp } from './db';
 import { store } from './store';
@@ -14,6 +18,10 @@ export interface SyncStatus {
   lastSync?: string;
   message?: string;
   pending: number;
+  /** Sticky notice about a change taken from the other phone; stays until dismissed. */
+  notice?: string;
+  /** The other phone runs a newer app: this one keeps ticks flowing but cannot take their plan. */
+  updateRequired?: boolean;
 }
 
 export interface CheckOp {
@@ -31,6 +39,10 @@ type Listener = (s: SyncStatus) => void;
 const listeners = new Set<Listener>();
 let status: SyncStatus = { state: 'unconfigured', pending: 0 };
 let inFlight: Promise<SyncStatus> | null = null;
+/** True while a sync round replaces the document, so the store listener does not schedule another round. */
+let applyingRemote = false;
+
+const OPS_PER_REQUEST = 200;
 
 function setStatus(patch: Partial<SyncStatus>) {
   status = { ...status, ...patch };
@@ -47,6 +59,24 @@ export function getSyncStatus(): SyncStatus {
   return status;
 }
 
+export function dismissNotice(): void {
+  setStatus({ notice: undefined, state: status.state === 'conflict' ? 'idle' : status.state });
+}
+
+/** Resolves once no sync round is in flight (tests and the e2e harness). */
+export async function awaitIdle(): Promise<void> {
+  while (inFlight) await inFlight;
+}
+
+/** Only for tests: forget module state between cases. */
+export function __resetSyncForTests(): void {
+  status = { state: 'unconfigured', pending: 0 };
+  inFlight = null;
+  applyingRemote = false;
+  if (timer) clearTimeout(timer);
+  timer = null;
+}
+
 /** The document as sent to the service: purchases travel as operations, the token never travels in the body. */
 export function docForSync(h: Household): Omit<Household, 'purchases' | 'sync'> {
   const copy = { ...h } as Partial<Household>;
@@ -55,17 +85,58 @@ export function docForSync(h: Household): Omit<Household, 'purchases' | 'sync'> 
   return copy as Omit<Household, 'purchases' | 'sync'>;
 }
 
+/** A service URL the app accepts: https, or plain http only on this machine (development). */
+export function serviceUrlProblem(url: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return 'Enter the full service address, starting with https://';
+  }
+  const local = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname);
+  if (u.protocol !== 'https:' && !(u.protocol === 'http:' && local))
+    return 'The service address must start with https:// (plain http only for localhost).';
+  return null;
+}
+
 export async function queueCheck(op: CheckOp): Promise<void> {
+  if (!store.get().sync) return;
   await db.outbox.put({ opId: op.opId, kind: 'check', payload: op, at: op.at, rev: op.rev });
   setStatus({ pending: await db.outbox.count() });
 }
 
-/** Fold operations into the purchases map, newest `at` wins per (week, key). */
+/** Ticks made before this phone was connected: send them as operations so the other phone sees them. */
+async function queuePurchases(h: Household): Promise<void> {
+  const ops: OutboxOp[] = [];
+  for (const [weekId, items] of Object.entries(h.purchases))
+    for (const [key, p] of Object.entries(items))
+      ops.push({
+        opId: p.opId,
+        kind: 'check',
+        payload: {
+          opId: p.opId,
+          weekId,
+          key,
+          checked: p.coveredG > 0,
+          coveredG: p.coveredG,
+          by: p.by,
+          at: p.at,
+          rev: p.rev,
+        } satisfies CheckOp,
+        at: p.at,
+        rev: p.rev,
+      });
+  if (ops.length) await db.outbox.bulkPut(ops);
+}
+
+/**
+ * Fold operations into the purchases map, newest `at` wins per (week, key). An uncheck leaves a
+ * tombstone (coveredG 0) so that an older check arriving later cannot resurrect the item.
+ */
 export function foldOps(purchases: Household['purchases'], ops: CheckOp[]): Household['purchases'] {
   const out: Household['purchases'] = Object.fromEntries(
     Object.entries(purchases).map(([k, v]) => [k, { ...v }]),
   );
-  // Newest timestamp seen per (week, key), including unchecks that removed the entry.
   const latestAt = new Map<string, string>();
   for (const [w, items] of Object.entries(out))
     for (const [k, v] of Object.entries(items)) latestAt.set(`${w}|${k}`, v.at);
@@ -75,15 +146,13 @@ export function foldOps(purchases: Household['purchases'], ops: CheckOp[]): Hous
     if (seen && seen > op.at) continue;
     latestAt.set(id, op.at);
     const week = { ...(out[op.weekId] ?? {}) };
-    if (op.checked)
-      week[op.key] = {
-        coveredG: op.coveredG,
-        at: op.at,
-        by: op.by,
-        opId: op.opId,
-        rev: op.rev,
-      } satisfies Purchase;
-    else delete week[op.key];
+    week[op.key] = {
+      coveredG: op.checked ? op.coveredG : 0,
+      at: op.at,
+      by: op.by,
+      opId: op.opId,
+      rev: op.rev,
+    } satisfies Purchase;
     out[op.weekId] = week;
   }
   return out;
@@ -104,27 +173,78 @@ export function serviceBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/+$/, '');
 }
 
+async function setCursor(lastSeq: number): Promise<void> {
+  await db.kv.put({ key: 'sync.lastSeq', value: lastSeq, updatedAt: new Date().toISOString() });
+}
+
+async function setDirty(dirty: boolean): Promise<void> {
+  await db.kv.put({ key: 'sync.dirty', value: dirty, updatedAt: new Date().toISOString() });
+}
+
+/** Adopt a document without waking the sync trigger. */
+function replaceQuietly(h: Household): void {
+  applyingRemote = true;
+  try {
+    store.replace(h);
+  } finally {
+    applyingRemote = false;
+  }
+}
+
 /** Create a household on the service and store the returned token locally. */
-export async function connectNew(serviceUrl: string): Promise<SyncStatus> {
+export async function connectNew(serviceUrl: string, createKey?: string): Promise<SyncStatus> {
+  const problem = serviceUrlProblem(serviceUrl);
+  if (problem) throw new Error(problem);
   const h = store.get();
-  const res = await api(`${serviceBase(serviceUrl)}/h`, {
-    method: 'POST',
-    body: JSON.stringify({ doc: docForSync(h) }),
-  });
+  const res = await api(
+    `${serviceBase(serviceUrl)}/h`,
+    { method: 'POST', body: JSON.stringify({ doc: docForSync(h) }) },
+    createKey?.trim() || undefined,
+  );
+  if (res.status === 401) throw new Error('This service needs its setup key to create a household.');
   if (!res.ok) throw new Error(`Service refused (${res.status})`);
   const { token, version } = (await res.json()) as { token: string; version: number };
-  store.update((x) => ({ ...x, sync: { serviceUrl: serviceBase(serviceUrl), token, lastVersion: version } }));
-  setStatus({ state: 'idle', lastSync: new Date().toISOString(), message: 'Connected' });
+  await db.outbox.clear();
+  await setCursor(0);
+  await setDirty(false);
+  replaceQuietly({
+    ...store.get(),
+    sync: { serviceUrl: serviceBase(serviceUrl), token, lastVersion: version },
+  });
+  await queuePurchases(store.get());
+  setStatus({ state: 'idle', lastSync: new Date().toISOString(), message: 'Connected', notice: undefined });
   return syncNow();
 }
 
-/** Join an existing household from a link: replace the local document with the service's. */
+/**
+ * Join a household from a link. A phone that already belongs to that household (a rotated link) only
+ * takes the new token and keeps its unsent work; any other phone replaces its data with the service's.
+ */
 export async function joinExisting(serviceUrl: string, token: string): Promise<SyncStatus> {
+  const problem = serviceUrlProblem(serviceUrl);
+  if (problem) throw new Error(problem);
   const base = serviceBase(serviceUrl);
   const res = await api(`${base}/h/state?since=0&sinceSeq=0`, undefined, token);
   if (!res.ok)
     throw new Error(res.status === 404 ? 'That link is not valid any more' : `Service error (${res.status})`);
-  const data = (await res.json()) as { version: number; doc: unknown; ops: CheckOp[]; lastSeq: number };
+  const data = (await res.json()) as {
+    version: number;
+    schemaVersion: number;
+    doc: { id?: unknown };
+    ops: CheckOp[];
+    lastSeq: number;
+  };
+  const local = store.get();
+  if (typeof data.doc?.id === 'string' && data.doc.id === local.id) {
+    replaceQuietly({
+      ...local,
+      sync: { serviceUrl: base, token, lastVersion: local.sync?.lastVersion ?? 0 },
+    });
+    setStatus({ state: 'idle', message: 'Reconnected', notice: undefined, updateRequired: false });
+    return syncNow();
+  }
+  if (data.schemaVersion > SCHEMA_VERSION)
+    throw new Error('The other phone runs a newer version of the app. Update this app, then join again.');
   const remote = migrateHousehold({
     ...(data.doc as object),
     purchases: {},
@@ -135,22 +255,35 @@ export async function joinExisting(serviceUrl: string, token: string): Promise<S
     purchases: foldOps({}, data.ops),
     sync: { serviceUrl: base, token, lastVersion: data.version },
   };
-  store.replace(merged);
   await db.outbox.clear();
-  await db.kv.put({ key: 'sync.lastSeq', value: data.lastSeq, updatedAt: new Date().toISOString() });
-  setStatus({ state: 'idle', lastSync: new Date().toISOString(), message: 'Joined', pending: 0 });
+  await setDirty(false);
+  await setCursor(data.lastSeq);
+  replaceQuietly(merged);
+  setStatus({
+    state: 'idle',
+    lastSync: new Date().toISOString(),
+    message: 'Joined',
+    pending: 0,
+    notice: undefined,
+    updateRequired: false,
+  });
   return status;
 }
 
 export async function disconnect(): Promise<void> {
-  store.update((x) => {
-    const copy = { ...x };
-    delete copy.sync;
-    return copy;
-  });
+  const copy = { ...store.get() };
+  delete copy.sync;
+  replaceQuietly(copy);
   await db.outbox.clear();
   await db.kv.delete('sync.lastSeq');
-  setStatus({ state: 'unconfigured', pending: 0, message: undefined });
+  await db.kv.delete('sync.dirty');
+  setStatus({
+    state: 'unconfigured',
+    pending: 0,
+    message: undefined,
+    notice: undefined,
+    updateRequired: false,
+  });
 }
 
 export async function rotateToken(): Promise<string> {
@@ -159,7 +292,7 @@ export async function rotateToken(): Promise<string> {
   const res = await api(`${h.sync.serviceUrl}/h/rotate`, { method: 'POST' }, h.sync.token);
   if (!res.ok) throw new Error(`Service error (${res.status})`);
   const { token } = (await res.json()) as { token: string };
-  store.update((x) => ({ ...x, sync: x.sync ? { ...x.sync, token } : x.sync }));
+  replaceQuietly({ ...store.get(), sync: { ...h.sync, token } });
   return token;
 }
 
@@ -177,6 +310,139 @@ export function syncNow(): Promise<SyncStatus> {
   return inFlight;
 }
 
+class SyncError extends Error {}
+const gone = () => new SyncError('The household is no longer on the service (link rotated?)');
+
+async function pushOps(serviceUrl: string, token: string): Promise<{ opId: string; winner: CheckOp }[]> {
+  const queued = (await db.outbox.orderBy('at').toArray()).filter(
+    (o): o is OutboxOp & { payload: CheckOp } => o.kind === 'check',
+  );
+  const conflicts: { opId: string; winner: CheckOp }[] = [];
+  for (let i = 0; i < queued.length; i += OPS_PER_REQUEST) {
+    const chunk = queued.slice(i, i + OPS_PER_REQUEST);
+    const res = await api(
+      `${serviceUrl}/h/ops`,
+      { method: 'POST', body: JSON.stringify({ ops: chunk.map((o) => o.payload) }) },
+      token,
+    );
+    if (res.status === 404) throw gone();
+    if (!res.ok) throw new SyncError(`Could not send ticks (${res.status})`);
+    const body = (await res.json()) as {
+      applied: string[];
+      duplicates?: string[];
+      rejected?: { opId?: string }[];
+      conflicts: { opId: string; winner: CheckOp }[];
+    };
+    conflicts.push(...body.conflicts);
+    // Forget what the service has (new or already known) and what it will never take.
+    const done = new Set([
+      ...body.applied,
+      ...(body.duplicates ?? []),
+      ...(body.rejected ?? []).flatMap((r) => (r.opId ? [r.opId] : [])),
+    ]);
+    const stuck = chunk.filter((o) => !done.has(o.opId));
+    await db.outbox.bulkDelete(chunk.filter((o) => done.has(o.opId)).map((o) => o.opId));
+    if (stuck.length) {
+      // Unnamed rejections (not even an id): drop them too, or the queue would never drain.
+      await db.outbox.bulkDelete(stuck.map((o) => o.opId));
+    }
+  }
+  return conflicts;
+}
+
+/** Returns the version to pull against and whether the other phone runs a newer schema. */
+async function pushDoc(
+  serviceUrl: string,
+  token: string,
+  lastVersion: number,
+): Promise<{ version: number; behind: boolean }> {
+  if ((await db.kv.get('sync.dirty'))?.value !== true) return { version: lastVersion, behind: false };
+  const snapshot = store.get();
+  const res = await api(
+    `${serviceUrl}/h/doc`,
+    { method: 'PUT', body: JSON.stringify({ baseVersion: lastVersion, doc: docForSync(snapshot) }) },
+    token,
+  );
+  if (res.status === 404) throw gone();
+  if (res.status === 426) {
+    setStatus({
+      updateRequired: true,
+      notice:
+        'The other phone runs a newer version of the app. Update this app to share the plan again; ticks still sync.',
+    });
+    return { version: lastVersion, behind: true };
+  }
+  if (res.status === 409) {
+    const body = (await res.json()) as { version: number; schemaVersion?: number; doc: unknown };
+    if ((body.schemaVersion ?? 0) > SCHEMA_VERSION) {
+      setStatus({
+        updateRequired: true,
+        notice:
+          'The other phone runs a newer version of the app. Update this app to share the plan again; ticks still sync.',
+      });
+      return { version: lastVersion, behind: true };
+    }
+    // Someone else planned in the meantime: take theirs, keep our purchases (they are ops), say so.
+    const remote = migrateHousehold({
+      ...(body.doc as object),
+      purchases: store.get().purchases,
+      sync: { serviceUrl, token, lastVersion: body.version },
+    });
+    replaceQuietly(remote);
+    await setDirty(false);
+    setStatus({
+      state: 'conflict',
+      notice:
+        'The plan was changed on the other phone; showing their version. Your last edit here was not kept.',
+    });
+    return { version: body.version, behind: false };
+  }
+  if (!res.ok) throw new SyncError(`Could not send the plan (${res.status})`);
+  const version = ((await res.json()) as { version: number }).version;
+  // An edit made while the push was in flight stays dirty for the next round.
+  if (store.get().updatedAt === snapshot.updatedAt) await setDirty(false);
+  replaceQuietly({ ...store.get(), sync: { serviceUrl, token, lastVersion: version } });
+  return { version, behind: false };
+}
+
+async function pull(serviceUrl: string, token: string, version: number, behind: boolean): Promise<void> {
+  const lastSeq = Number((await db.kv.get('sync.lastSeq'))?.value ?? 0);
+  const before = store.get();
+  const res = await api(`${serviceUrl}/h/state?since=${version}&sinceSeq=${lastSeq}`, undefined, token);
+  if (res.status === 404) throw gone();
+  if (!res.ok) throw new SyncError(`Could not fetch (${res.status})`);
+  const data = (await res.json()) as {
+    version: number;
+    schemaVersion: number;
+    doc?: unknown;
+    ops: CheckOp[];
+    lastSeq: number;
+  };
+  const current = store.get();
+  const editedMeanwhile = current.updatedAt !== before.updatedAt;
+  let next: Household = current;
+  let adoptedDoc = false;
+  if (data.doc && data.schemaVersion > SCHEMA_VERSION) {
+    setStatus({
+      updateRequired: true,
+      notice:
+        'The other phone runs a newer version of the app. Update this app to see their plan; ticks still sync.',
+    });
+  } else if (data.doc && !editedMeanwhile && !behind) {
+    next = migrateHousehold({
+      ...(data.doc as object),
+      purchases: current.purchases,
+      sync: { serviceUrl, token, lastVersion: data.version },
+    });
+    adoptedDoc = true;
+  }
+  // A local edit made during the fetch is pushed next round; its compare-and-set then decides.
+  if (data.ops.length) next = { ...next, purchases: foldOps(next.purchases, data.ops) };
+  if (next !== current) replaceQuietly(next);
+  if (data.lastSeq !== lastSeq) await setCursor(data.lastSeq);
+  if (adoptedDoc && status.updateRequired) setStatus({ updateRequired: false, notice: undefined });
+}
+
 async function run(): Promise<SyncStatus> {
   const h = store.get();
   if (!h.sync) {
@@ -188,95 +454,30 @@ async function run(): Promise<SyncStatus> {
     return status;
   }
   const { serviceUrl, token } = h.sync;
-  setStatus({ state: 'syncing' });
+  setStatus({ state: 'syncing', message: undefined });
+  let pushError: Error | null = null;
+  let conflicts: { opId: string; winner: CheckOp }[] = [];
   try {
-    // 1. Push queued checks.
-    const queued = (await db.outbox.toArray()).filter(
-      (o): o is OutboxOp & { payload: CheckOp } => o.kind === 'check',
-    );
-    let conflicts: { opId: string; winner: CheckOp }[] = [];
-    if (queued.length) {
-      const res = await api(
-        `${serviceUrl}/h/ops`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ ops: queued.map((o) => o.payload) }),
-        },
-        token,
-      );
-      if (res.status === 404) throw new Error('The household is no longer on the service (token rotated?)');
-      if (!res.ok) throw new Error(`Could not send ticks (${res.status})`);
-      const body = (await res.json()) as {
-        applied: string[];
-        conflicts: { opId: string; winner: CheckOp }[];
-      };
-      conflicts = body.conflicts;
-      await db.outbox.bulkDelete(queued.map((o) => o.opId));
+    try {
+      conflicts = await pushOps(serviceUrl, token);
+    } catch (e) {
+      // Ticks that could not be sent stay queued; the plan still travels in both directions.
+      if (e instanceof SyncError && e.message.startsWith('The household is no longer')) throw e;
+      pushError = e instanceof Error ? e : new Error(String(e));
     }
-    // 2. Push the document if it changed since the last sync.
-    const dirty = (await db.kv.get('sync.dirty'))?.value === true;
-    let version = h.sync.lastVersion;
-    if (dirty) {
-      const res = await api(
-        `${serviceUrl}/h/doc`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({ baseVersion: version, doc: docForSync(store.get()) }),
-        },
-        token,
-      );
-      if (res.status === 409) {
-        const body = (await res.json()) as { version: number; doc: unknown };
-        // Someone else planned in the meantime: take theirs, keep our purchases (they are ops), report it.
-        const remote = migrateHousehold({
-          ...(body.doc as object),
-          purchases: store.get().purchases,
-          sync: { serviceUrl, token, lastVersion: body.version },
-        });
-        store.replace(remote);
-        await db.kv.put({ key: 'sync.dirty', value: false, updatedAt: new Date().toISOString() });
-        version = body.version;
-        setStatus({
-          state: 'conflict',
-          message: 'The plan was changed on the other phone; showing their version.',
-        });
-      } else if (!res.ok) {
-        throw new Error(`Could not send the plan (${res.status})`);
-      } else {
-        version = ((await res.json()) as { version: number }).version;
-        await db.kv.put({ key: 'sync.dirty', value: false, updatedAt: new Date().toISOString() });
-      }
-    }
-    // 3. Pull.
-    const lastSeq = Number((await db.kv.get('sync.lastSeq'))?.value ?? 0);
-    const res = await api(`${serviceUrl}/h/state?since=${version}&sinceSeq=${lastSeq}`, undefined, token);
-    if (res.status === 404) throw new Error('The household is no longer on the service (token rotated?)');
-    if (!res.ok) throw new Error(`Could not fetch (${res.status})`);
-    const data = (await res.json()) as { version: number; doc?: unknown; ops: CheckOp[]; lastSeq: number };
-    const current = store.get();
-    let next: Household = current;
-    if (data.doc) {
-      next = migrateHousehold({
-        ...(data.doc as object),
-        purchases: current.purchases,
-        sync: { serviceUrl, token, lastVersion: data.version },
-      });
-    } else {
-      next = { ...current, sync: { serviceUrl, token, lastVersion: data.version } };
-    }
-    if (data.ops.length) next = { ...next, purchases: foldOps(next.purchases, data.ops) };
-    store.replace(next);
-    await db.kv.put({ key: 'sync.lastSeq', value: data.lastSeq, updatedAt: new Date().toISOString() });
+    const { version, behind } = await pushDoc(serviceUrl, token, store.get().sync?.lastVersion ?? 0);
+    await pull(serviceUrl, token, version, behind);
     const pending = await db.outbox.count();
+    const notice =
+      conflicts.length > 0
+        ? `${conflicts.length} tick${conflicts.length > 1 ? 's' : ''} changed on the other phone`
+        : status.notice;
     setStatus({
-      state: conflicts.length ? 'conflict' : status.state === 'conflict' ? 'conflict' : 'idle',
+      state: pushError ? 'error' : notice ? 'conflict' : 'idle',
       lastSync: new Date().toISOString(),
       pending,
-      message: conflicts.length
-        ? `${conflicts.length} tick${conflicts.length > 1 ? 's' : ''} changed on the other phone`
-        : status.state === 'conflict'
-          ? status.message
-          : undefined,
+      message: pushError ? pushError.message : undefined,
+      notice,
     });
   } catch (e) {
     setStatus({
@@ -290,7 +491,7 @@ async function run(): Promise<SyncStatus> {
 
 export async function markDocDirty(): Promise<void> {
   if (!store.get().sync) return;
-  await db.kv.put({ key: 'sync.dirty', value: true, updatedAt: new Date().toISOString() });
+  await setDirty(true);
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -303,16 +504,18 @@ export function scheduleSync(delayMs = 1500): void {
 
 export function installSyncTriggers(): () => void {
   const kick = () => scheduleSync(300);
+  const onVisible = () => document.visibilityState === 'visible' && kick();
   window.addEventListener('online', kick);
   window.addEventListener('focus', kick);
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && kick());
+  document.addEventListener('visibilitychange', onVisible);
   const unsub = store.subscribe(() => {
-    if (store.get().sync) scheduleSync();
+    if (!applyingRemote && store.get().sync) scheduleSync();
   });
   kick();
   return () => {
     window.removeEventListener('online', kick);
     window.removeEventListener('focus', kick);
+    document.removeEventListener('visibilitychange', onVisible);
     unsub();
   };
 }

@@ -29,7 +29,8 @@ const GENERIC: Record<Lang, Record<Role, string>> = {
 };
 
 export interface TitleLine {
-  role: Role;
+  /** A dish role; plate lines carry extra roles (oil) that no title names. */
+  role: string;
   foodId: string;
 }
 

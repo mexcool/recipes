@@ -117,14 +117,151 @@ describe('sync service', () => {
     expect(state.lastSeq).toBe(3);
   });
 
-  it('validates operations and limits batch size', async () => {
+  it('names malformed operations and keeps the well-formed ones, so one bad op never blocks a queue', async () => {
     const { app, token } = await setup();
-    const bad = await app.request('/h/ops', {
+    const good = {
+      opId: 'ok1',
+      weekId: 'w1',
+      key: 'rice',
+      checked: true,
+      coveredG: 1000,
+      by: 'g',
+      at: '2026-11-08T10:00:00Z',
+      rev: 1,
+    };
+    const res = await app.request('/h/ops', {
       method: 'POST',
-      body: JSON.stringify({ ops: [{ opId: 'x' }] }),
+      body: JSON.stringify({
+        ops: [
+          { opId: 'x' },
+          { ...good, opId: 'bad-at', at: 'zzzz' },
+          { ...good, opId: 'bad-g', coveredG: Number.POSITIVE_INFINITY },
+          { ...good, opId: 'bad-key', key: 'k'.repeat(201) },
+          'nope',
+          good,
+        ],
+      }),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
-    expect(bad.status).toBe(400);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { applied: string[]; rejected: { opId?: string; reason: string }[] };
+    expect(body.applied).toEqual(['ok1']);
+    expect(body.rejected.map((r) => r.opId ?? '?')).toEqual(['x', 'bad-at', 'bad-g', 'bad-key', '?']);
+    const notArray = await app.request('/h/ops', {
+      method: 'POST',
+      body: JSON.stringify({ ops: 'x' }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    expect(notArray.status).toBe(400);
+    const tooMany = await app.request('/h/ops', {
+      method: 'POST',
+      body: JSON.stringify({ ops: Array.from({ length: 501 }, (_, i) => ({ ...good, opId: `m${i}` })) }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    expect(tooMany.status).toBe(400);
+  });
+
+  it('scopes operation ids to the household', async () => {
+    const a = await setup();
+    const b = await setup();
+    const op = {
+      opId: 'same-id',
+      weekId: 'w1',
+      key: 'rice',
+      checked: true,
+      coveredG: 1000,
+      by: 'g',
+      at: '2026-11-08T10:00:00Z',
+      rev: 1,
+    };
+    for (const { app, token } of [a, b]) {
+      const res = await app.request('/h/ops', {
+        method: 'POST',
+        body: JSON.stringify({ ops: [op] }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      expect(((await res.json()) as { applied: string[] }).applied).toEqual(['same-id']);
+    }
+    const again = await a.app.request('/h/ops', {
+      method: 'POST',
+      body: JSON.stringify({ ops: [op] }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${a.token}` },
+    });
+    const body = (await again.json()) as { applied: string[]; duplicates: string[] };
+    expect(body.applied).toEqual([]);
+    expect(body.duplicates).toEqual(['same-id']);
+  });
+
+  it('rejects hostile document bodies with 400, never 500', async () => {
+    const { app, token } = await setup();
+    const put = (body: unknown) =>
+      app.request('/h/doc', {
+        method: 'PUT',
+        body: typeof body === 'string' ? body : JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+    expect((await put({ baseVersion: 1, doc: null })).status).toBe(400);
+    expect((await put({ baseVersion: 1, doc: [] })).status).toBe(400);
+    expect((await put({ baseVersion: 1, doc: { schemaVersion: 'abc' } })).status).toBe(400);
+    expect((await put('{"baseVersion":1,"doc":{"schemaVersion":1e999}}')).status).toBe(400);
+    expect((await put({ baseVersion: 'x', doc: doc(2) })).status).toBe(400);
+    expect((await put('{not json')).status).toBe(400);
+    const create = await app.request('/h', {
+      method: 'POST',
+      body: JSON.stringify({ doc: null }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(create.status).toBe(400);
+  });
+
+  it('never lets an older app schema overwrite a newer document', async () => {
+    const { app, token } = await setup();
+    const newer = await app.request('/h/doc', {
+      method: 'PUT',
+      body: JSON.stringify({ baseVersion: 1, doc: { ...doc(2), schemaVersion: 2 } }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    expect(newer.status).toBe(200);
+    const older = await app.request('/h/doc', {
+      method: 'PUT',
+      body: JSON.stringify({ baseVersion: 2, doc: { ...doc(3), schemaVersion: 1 } }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    expect(older.status).toBe(426);
+    const body = (await older.json()) as { error: string; schemaVersion: number };
+    expect(body.error).toBe('schema_behind');
+    expect(body.schemaVersion).toBe(2);
+    const state = (await (
+      await app.request(`/h/state?since=0`, { headers: { Authorization: `Bearer ${token}` } })
+    ).json()) as { schemaVersion: number; doc: { marker: number } };
+    expect(state.schemaVersion).toBe(2);
+    expect(state.doc.marker).toBe(2);
+  });
+
+  it('refuses oversized bodies before parsing them', async () => {
+    const { app, token } = await setup();
+    const res = await app.request('/h/ops', {
+      method: 'POST',
+      body: JSON.stringify({ ops: [], pad: 'x'.repeat(300 * 1024) }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(413);
+  });
+
+  it('requires the setup key to create a household when one is configured', async () => {
+    const app = createApp(new MemoryStore(), { createKey: 'secret-key' });
+    const denied = await app.request('/h', {
+      method: 'POST',
+      body: JSON.stringify({ doc: doc(1) }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(denied.status).toBe(401);
+    const allowed = await app.request('/h', {
+      method: 'POST',
+      body: JSON.stringify({ doc: doc(1) }),
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer secret-key' },
+    });
+    expect(allowed.status).toBe(201);
   });
 
   it('rotates the token', async () => {

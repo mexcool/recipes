@@ -19,6 +19,9 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec vite build
+        env:
+          # Optional: a repository variable with your deployed service URL pre-fills Settings → Sync.
+          VITE_SYNC_URL: ${{ vars.VITE_SYNC_URL }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:

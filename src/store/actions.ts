@@ -28,7 +28,7 @@ import { exportHousehold, importHousehold } from '@/core/household';
 import { ctxOf, shoppingFor, weekFor } from './selectors';
 import { store } from './store';
 import { currentNow } from './now';
-import { queueCheck } from './sync';
+import { markDocDirty, queueCheck } from './sync';
 
 export type ActionResult =
   { ok: true; warnings?: string[] } | { ok: false; reason: string; violations?: string[] };
@@ -40,6 +40,15 @@ export function newId(prefix: string): string {
       : Math.random().toString(36).slice(2, 10);
   return `${prefix}-${rnd}`;
 }
+
+/** Operation ids travel to the service and must never collide within a household: a full UUID. */
+export function newOpId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `op-${crypto.randomUUID()}`;
+  return `op-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+}
+
+/** Weeks older than this are dropped from the document; variety looks back 8 weeks at most. */
+const KEEP_WEEKS = 26;
 
 const SHELF_STABLE_SECTIONS = new Set(['pasta_grains', 'breakfast_snacks', 'frozen', 'oils_condiments']);
 
@@ -63,7 +72,21 @@ function putWeek(h: Household, week: Week, batches?: readonly Batch[]): Househol
     ? h.weeks.map((w) => (w.id === week.id ? week : w))
     : [...h.weeks, week];
   const otherBatches = batches ? h.batches.filter((b) => b.weekId !== week.id) : h.batches;
-  return { ...h, weeks, batches: batches ? [...otherBatches, ...batches] : h.batches };
+  return pruneWeeks({ ...h, weeks, batches: batches ? [...otherBatches, ...batches] : h.batches });
+}
+
+/** Keep the document bounded: old weeks, their batches and their purchases go. */
+export function pruneWeeks(h: Household, keep = KEEP_WEEKS): Household {
+  if (h.weeks.length <= keep) return h;
+  const sorted = [...h.weeks].sort((a, b) => a.monday.localeCompare(b.monday));
+  const dropped = new Set(sorted.slice(0, sorted.length - keep).map((w) => w.id));
+  const purchases = Object.fromEntries(Object.entries(h.purchases).filter(([k]) => !dropped.has(k)));
+  return {
+    ...h,
+    weeks: h.weeks.filter((w) => !dropped.has(w.id)),
+    batches: h.batches.filter((b) => !dropped.has(b.weekId)),
+    purchases,
+  };
 }
 
 function applyResult(weekId: string, res: MutationResult): ActionResult {
@@ -209,6 +232,13 @@ export const actions = {
     return applyResult(weekId, mut.markOut(week, date, which, ctxFor(h, week, currentNow())));
   },
 
+  /** Back from "eating out" to a planned meal with the reference options and a fitting dish. */
+  markIn(weekId: string, date: string, which: MainMeal): ActionResult {
+    const h = store.get();
+    const week = weekById(h, weekId);
+    return applyResult(weekId, mut.markOut(week, date, which, ctxFor(h, week, currentNow()), false));
+  },
+
   setVeg(weekId: string, date: string, which: MainMeal, veg: string[]): ActionResult {
     const h = store.get();
     const week = weekById(h, weekId);
@@ -272,13 +302,20 @@ export const actions = {
       const weekPurchases = { ...(h.purchases[weekId] ?? {}) };
       const prev = weekPurchases[item.key];
       const at = new Date().toISOString();
-      op = purchaseForCheck(item, prev, by, at, newId('op'));
+      op = purchaseForCheck(item, prev, by, at, newOpId());
       weekPurchases[item.key] = op;
-      // Shelf-stable leftovers from pack rounding become pantry stock (editable in Settings).
-      const pantry = { ...h.pantry };
-      if (item.buy && item.buy.leftoverG > 0 && SHELF_STABLE_SECTIONS.has(item.section)) {
-        pantry[item.foodId] = (pantry[item.foodId] ?? 0) + item.buy.leftoverG;
-      }
+      // Shelf-stable leftovers from pack rounding become pantry stock (editable in Settings). The
+      // pantry object is only replaced when it changes: a tick must not count as a document edit.
+      const leftover =
+        item.buy &&
+        item.buy.leftoverG > 0 &&
+        SHELF_STABLE_SECTIONS.has(item.section) &&
+        !(prev && prev.coveredG > 0)
+          ? item.buy.leftoverG
+          : 0;
+      const pantry = leftover
+        ? { ...h.pantry, [item.foodId]: (h.pantry[item.foodId] ?? 0) + leftover }
+        : h.pantry;
       return { ...h, purchases: { ...h.purchases, [weekId]: weekPurchases }, pantry };
     });
     if (op)
@@ -295,27 +332,39 @@ export const actions = {
   },
 
   uncheckItem(weekId: string, item: ShoppingItem, by = 'me'): void {
-    let prevOp: Purchase | undefined;
+    // An uncheck leaves a tombstone (coveredG 0) rather than deleting: its timestamp protects the
+    // item from an older check arriving late from the other phone.
+    const tomb: Purchase = {
+      coveredG: 0,
+      at: new Date().toISOString(),
+      by,
+      opId: newOpId(),
+      rev: 0,
+    };
     store.update((h) => {
       const weekPurchases = { ...(h.purchases[weekId] ?? {}) };
       const prev = weekPurchases[item.key];
-      prevOp = prev;
-      delete weekPurchases[item.key];
-      const pantry = { ...h.pantry };
-      if (prev && item.buy && item.buy.leftoverG > 0 && SHELF_STABLE_SECTIONS.has(item.section)) {
-        pantry[item.foodId] = Math.max(0, (pantry[item.foodId] ?? 0) - item.buy.leftoverG);
-      }
+      tomb.rev = (prev?.rev ?? 0) + 1;
+      weekPurchases[item.key] = tomb;
+      const wasChecked = !!prev && prev.coveredG > 0;
+      const leftover =
+        wasChecked && item.buy && item.buy.leftoverG > 0 && SHELF_STABLE_SECTIONS.has(item.section)
+          ? item.buy.leftoverG
+          : 0;
+      const pantry = leftover
+        ? { ...h.pantry, [item.foodId]: Math.max(0, (h.pantry[item.foodId] ?? 0) - leftover) }
+        : h.pantry;
       return { ...h, purchases: { ...h.purchases, [weekId]: weekPurchases }, pantry };
     });
     void queueCheck({
-      opId: newId('op'),
+      opId: tomb.opId,
       weekId,
       key: item.key,
       checked: false,
       coveredG: 0,
       by,
-      at: new Date().toISOString(),
-      rev: (prevOp?.rev ?? 0) + 1,
+      at: tomb.at,
+      rev: tomb.rev,
     });
   },
 
@@ -488,7 +537,7 @@ export const actions = {
       }));
       return { ok: true };
     } catch (e) {
-      return { ok: false, reason: e instanceof Error ? e.message : 'Invalid plan file' };
+      return { ok: false, reason: importProblem(e, 'Not a Stasera plan file') };
     }
   },
 
@@ -525,12 +574,16 @@ export const actions = {
     return exportHousehold(store.get());
   },
 
+  /** Replace this phone's data with an exported file; a sync connection on this phone is kept. */
   importJson(json: string): ActionResult {
     try {
-      store.replace(importHousehold(json));
+      const current = store.get();
+      const imported = importHousehold(json);
+      store.replace(current.sync ? { ...imported, sync: current.sync } : imported);
+      if (current.sync) void markDocDirty();
       return { ok: true };
     } catch (e) {
-      return { ok: false, reason: e instanceof Error ? e.message : 'Invalid file' };
+      return { ok: false, reason: importProblem(e, 'Not a Stasera backup file') };
     }
   },
 
@@ -538,3 +591,16 @@ export const actions = {
     await store.reset();
   },
 };
+
+/** A readable reason for a failed import: schema errors name the missing fields instead of dumping JSON. */
+function importProblem(e: unknown, what: string): string {
+  if (e instanceof SyntaxError) return `${what}: it is not valid JSON.`;
+  if (e && typeof e === 'object' && 'issues' in e && Array.isArray((e as { issues: unknown[] }).issues)) {
+    const paths = (e as { issues: { path: PropertyKey[] }[] }).issues
+      .map((i) => i.path.map(String).join('.'))
+      .filter((p, i, a) => p && a.indexOf(p) === i)
+      .slice(0, 4);
+    return `${what}${paths.length ? ` (problem with: ${paths.join(', ')})` : ''}.`;
+  }
+  return e instanceof Error ? e.message : `${what}.`;
+}

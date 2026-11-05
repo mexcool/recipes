@@ -122,6 +122,8 @@ export class HouseholdStore {
 
   async reset(): Promise<void> {
     await db.kv.delete(KEY);
+    await db.kv.delete('sync.lastSeq');
+    await db.kv.delete('sync.dirty');
     await db.outbox.clear();
     this.doc = createHousehold({ plan: DEMO_PLAN, dishes: SEED_DISHES });
     await this.persist();

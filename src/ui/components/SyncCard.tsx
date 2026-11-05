@@ -5,9 +5,11 @@ import type { Household } from '@/core/model';
 import {
   connectNew,
   disconnect,
+  dismissNotice,
   getSyncStatus,
   joinLink,
   rotateToken,
+  serviceUrlProblem,
   subscribeSync,
   syncNow,
 } from '@/store/sync';
@@ -25,6 +27,8 @@ export function SyncCard({ h }: { h: Household }) {
   const toast = useToast();
   const status = useSyncExternalStore(subscribeSyncStatus, getSyncStatus, getSyncStatus);
   const [serviceUrl, setServiceUrl] = useState(h.sync?.serviceUrl ?? DEFAULT_SERVICE);
+  const [createKey, setCreateKey] = useState('');
+  const urlProblem = serviceUrl ? serviceUrlProblem(serviceUrl) : null;
   const [busy, setBusy] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
@@ -70,7 +74,9 @@ export function SyncCard({ h }: { h: Household }) {
         ? 'Error'
         : status.state === 'conflict'
           ? 'Changed elsewhere'
-          : 'Connected';
+          : status.updateRequired
+            ? 'Update needed'
+            : 'Connected';
 
   return (
     <div>
@@ -89,6 +95,19 @@ export function SyncCard({ h }: { h: Household }) {
         )}
       </div>
       {status.message && <p className="mt-2 text-sm text-ink-2">{status.message}</p>}
+      {status.notice && (
+        <div
+          role="status"
+          className="mt-2 flex items-start justify-between gap-3 rounded-xl bg-warn-soft px-3 py-2 text-sm text-ink"
+        >
+          <span>{status.notice}</span>
+          {!status.updateRequired && (
+            <Button variant="ghost" size="sm" onClick={() => dismissNotice()}>
+              Got it
+            </Button>
+          )}
+        </div>
+      )}
 
       {!h.sync ? (
         <div className="mt-3 space-y-2">
@@ -105,16 +124,33 @@ export function SyncCard({ h }: { h: Household }) {
               value={serviceUrl}
               onChange={(e) => setServiceUrl(e.target.value)}
               placeholder="https://stasera-sync.<you>.workers.dev"
+              aria-describedby="sync-url-hint"
+              className="mt-1 w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-ink"
+            />
+            <span
+              id="sync-url-hint"
+              className={`mt-1 block text-xs ${urlProblem ? 'text-terra' : 'text-muted'}`}
+            >
+              {urlProblem ?? 'Your own service: the whole plan goes there, so only use one you deployed.'}
+            </span>
+          </label>
+          <label className="block text-sm">
+            <span className="text-muted">Setup key (only if your service asks for one)</span>
+            <input
+              type="password"
+              autoComplete="off"
+              value={createKey}
+              onChange={(e) => setCreateKey(e.target.value)}
               className="mt-1 w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-ink"
             />
           </label>
           <Button
             variant="primary"
             icon={<Link2 size={16} />}
-            disabled={busy || !/^https?:\/\//.test(serviceUrl)}
+            disabled={busy || !serviceUrl || !!urlProblem}
             onClick={() =>
               void run(
-                () => connectNew(serviceUrl),
+                () => connectNew(serviceUrl, createKey),
                 'Connected. Show the QR code on the other phone to join.',
               )
             }

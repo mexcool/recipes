@@ -50,12 +50,16 @@ export function migrateHousehold(raw: unknown): Household {
   return HouseholdSchema.parse(doc);
 }
 
+/** The backup file never carries the sync token: a file travels further than a phone. */
 export function exportHousehold(h: Household): string {
-  return JSON.stringify({ ...h, exportedAt: new Date().toISOString() }, null, 2);
+  const copy = { ...h } as Partial<Household>;
+  delete copy.sync;
+  return JSON.stringify({ ...copy, exportedAt: new Date().toISOString() }, null, 2);
 }
 
 export function importHousehold(json: string): Household {
   const parsed: unknown = JSON.parse(json);
+  if (parsed && typeof parsed === 'object' && 'sync' in parsed) delete (parsed as { sync?: unknown }).sync;
   return migrateHousehold(parsed);
 }
 

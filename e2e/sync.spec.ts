@@ -36,13 +36,25 @@ test('phone B joins phone A; ticks travel both ways; a plan change is pulled', a
   expect(link).toContain('#/join?');
   await a.keyboard.press('Escape');
 
-  // B joins through the link.
+  // B joins through the link; the secret leaves the address bar and history at once.
   const b = await phone(browser);
   await b.goto(link);
+  await expect(b.getByText(new URL(SYNC_URL!).host)).toBeVisible();
+  expect(await b.evaluate(() => window.location.hash)).toBe('#/join');
   await b.getByRole('button', { name: /Join and replace my data/ }).click();
   await expect(b.getByRole('button', { name: /^Cook$/ })).toBeVisible();
   const firstLunchB = await b.getByRole('heading', { level: 2 }).first().textContent();
   expect(firstLunchB).toBe(firstLunchA);
+  await b.goBack();
+  await expect(b.getByRole('button', { name: /Join and replace my data/ })).toHaveCount(0);
+  expect(await b.evaluate(() => window.location.hash)).not.toContain('t=');
+  await b.goto('/');
+
+  // Requests from here on: ticks travel as operations, never as a document push.
+  const putsB: string[] = [];
+  b.on('request', (r) => {
+    if (r.method() === 'PUT') putsB.push(r.url());
+  });
 
   // B ticks an item; A pulls it.
   await b.goto('/#/shopping');
@@ -51,6 +63,7 @@ test('phone B joins phone A; ticks travel both ways; a plan change is pulled', a
   await row.click();
   await expect(b.getByRole('region', { name: 'In the cart' })).toBeVisible();
   await b.waitForTimeout(2500); // debounced push
+  expect(putsB).toEqual([]);
   await a.goto('/#/settings');
   await a.getByRole('button', { name: /Sync now/ }).click();
   await a.goto('/#/shopping');
@@ -70,4 +83,21 @@ test('phone B joins phone A; ticks travel both ways; a plan change is pulled', a
   await b.getByRole('button', { name: /Sync now/ }).click();
   await b.goto('/#/week');
   await expect(b.getByRole('button', { name: /^Dinner: / }).first()).toHaveAttribute('aria-label', weekA!);
+
+  // Both phones edit the plan while apart: the later push loses, sees the other version, and the notice
+  // stays until dismissed.
+  await b.goto('/#/week');
+  await b.getByRole('button', { name: /Regenerate unlocked/ }).click();
+  await b.waitForTimeout(2500);
+  await a.context().setOffline(true);
+  await a.goto('/#/week');
+  await a.getByRole('button', { name: /Regenerate unlocked/ }).click();
+  await a.context().setOffline(false);
+  await a.goto('/#/settings');
+  await a.getByRole('button', { name: /Sync now/ }).click();
+  await expect(a.getByText(/changed on the other phone/)).toBeVisible();
+  await a.waitForTimeout(4000); // several rounds later it is still there
+  await expect(a.getByText(/changed on the other phone/)).toBeVisible();
+  await a.getByRole('button', { name: /Got it/ }).click();
+  await expect(a.getByText(/changed on the other phone/)).toHaveCount(0);
 });
