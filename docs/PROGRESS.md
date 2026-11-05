@@ -21,6 +21,18 @@
 - Client sync layer: outbox, dirty flag, push/pull/merge, join link + QR, Settings controls.
 - CI workflow (typecheck, lint, unit, build, e2e) and GitHub Pages workflow.
 
+## Final adversarial reviews (UI/accessibility; sync/security): APPLIED
+- Dish titles follow the food chosen for the meal (`{{role}}` placeholders in titles).
+- Sync: no self-polling (an idle phone makes no requests), ticks never dirty the document, unchecks
+  leave tombstones, sticky "changed elsewhere" notice, schema guard (426), token never exported, join
+  link stripped from history, https required, rejected ops never block the queue, full-UUID op ids.
+- Service: per-household op ids and atomic sequence numbers (migration 0002, verified with 40 parallel
+  pushes on local D1), input validation with 400s, body limits, byte-measured document cap, optional
+  `CREATE_KEY`, pruning of old operations. CI runs the two-phone journey against local D1.
+- UI: see the commit "UI review fixes" (weekend planning, eating-out reversible, dark-mode contrast,
+  modal sheets, clock-aware hero, readable plate chips, editor reasons, link-as-button markup).
+- Known, not done: ~90 UI strings still live outside `src/i18n/en.ts` (Italian UI is a later step).
+
 ## Next
 - Owner: deploy the worker (docs/DEPLOY.md), enable Pages, import the real plan, review amounts.
 - v1.1: "New idea" with the model; recipe text/URL parsing. v1.2: photo/PDF plan import.
