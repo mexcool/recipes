@@ -45,7 +45,7 @@ export function createApp(store: SyncStore) {
     cors({
       origin: '*',
       allowMethods: ['GET', 'POST', 'PUT', 'OPTIONS'],
-      allowHeaders: ['Content-Type'],
+      allowHeaders: ['Content-Type', 'Authorization'],
       maxAge: 86400,
     }),
   );
@@ -79,10 +79,14 @@ export function createApp(store: SyncStore) {
     return c.json({ token, id, version: 1 }, 201);
   });
 
-  const withHousehold = async (token: string) => store.getByTokenHash(await sha256Hex(token));
+  /** The capability token travels in the Authorization header, never in the path, so request logs never see it. */
+  const tokenOf = (c: { req: { header: (n: string) => string | undefined } }): string =>
+    (c.req.header('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+  const withHousehold = async (token: string) =>
+    token ? store.getByTokenHash(await sha256Hex(token)) : null;
 
-  app.get('/h/:t/state', async (c) => {
-    const row = await withHousehold(c.req.param('t'));
+  app.get('/h/state', async (c) => {
+    const row = await withHousehold(tokenOf(c));
     if (!row) return c.json({ error: 'not found' }, 404);
     const since = Number(c.req.query('since') ?? 0);
     const sinceSeq = Number(c.req.query('sinceSeq') ?? 0);
@@ -99,8 +103,8 @@ export function createApp(store: SyncStore) {
     });
   });
 
-  app.put('/h/:t/doc', async (c) => {
-    const row = await withHousehold(c.req.param('t'));
+  app.put('/h/doc', async (c) => {
+    const row = await withHousehold(tokenOf(c));
     if (!row) return c.json({ error: 'not found' }, 404);
     const body = await readJson(c.req.raw);
     if (
@@ -121,7 +125,7 @@ export function createApp(store: SyncStore) {
       new Date().toISOString(),
     );
     if (!ok) {
-      const fresh = await withHousehold(c.req.param('t'));
+      const fresh = await withHousehold(tokenOf(c));
       return c.json(
         {
           error: 'conflict',
@@ -134,8 +138,8 @@ export function createApp(store: SyncStore) {
     return c.json({ version: baseVersion + 1 });
   });
 
-  app.post('/h/:t/ops', async (c) => {
-    const row = await withHousehold(c.req.param('t'));
+  app.post('/h/ops', async (c) => {
+    const row = await withHousehold(tokenOf(c));
     if (!row) return c.json({ error: 'not found' }, 404);
     const body = await readJson(c.req.raw);
     const ops =
@@ -158,8 +162,8 @@ export function createApp(store: SyncStore) {
     });
   });
 
-  app.post('/h/:t/rotate', async (c) => {
-    const row = await withHousehold(c.req.param('t'));
+  app.post('/h/rotate', async (c) => {
+    const row = await withHousehold(tokenOf(c));
     if (!row) return c.json({ error: 'not found' }, 404);
     const token = newToken();
     await store.rotateToken(row.id, await sha256Hex(token));

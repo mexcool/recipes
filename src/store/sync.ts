@@ -89,8 +89,15 @@ export function foldOps(purchases: Household['purchases'], ops: CheckOp[]): Hous
   return out;
 }
 
-async function api(url: string, init?: RequestInit): Promise<Response> {
-  return fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
+async function api(url: string, init?: RequestInit, token?: string): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
 }
 
 export function serviceBase(serviceUrl: string): string {
@@ -114,7 +121,7 @@ export async function connectNew(serviceUrl: string): Promise<SyncStatus> {
 /** Join an existing household from a link: replace the local document with the service's. */
 export async function joinExisting(serviceUrl: string, token: string): Promise<SyncStatus> {
   const base = serviceBase(serviceUrl);
-  const res = await api(`${base}/h/${token}/state?since=0&sinceSeq=0`);
+  const res = await api(`${base}/h/state?since=0&sinceSeq=0`, undefined, token);
   if (!res.ok)
     throw new Error(res.status === 404 ? 'That link is not valid any more' : `Service error (${res.status})`);
   const data = (await res.json()) as { version: number; doc: unknown; ops: CheckOp[]; lastSeq: number };
@@ -149,7 +156,7 @@ export async function disconnect(): Promise<void> {
 export async function rotateToken(): Promise<string> {
   const h = store.get();
   if (!h.sync) throw new Error('Not connected');
-  const res = await api(`${h.sync.serviceUrl}/h/${h.sync.token}/rotate`, { method: 'POST' });
+  const res = await api(`${h.sync.serviceUrl}/h/rotate`, { method: 'POST' }, h.sync.token);
   if (!res.ok) throw new Error(`Service error (${res.status})`);
   const { token } = (await res.json()) as { token: string };
   store.update((x) => ({ ...x, sync: x.sync ? { ...x.sync, token } : x.sync }));
@@ -189,10 +196,14 @@ async function run(): Promise<SyncStatus> {
     );
     let conflicts: { opId: string; winner: CheckOp }[] = [];
     if (queued.length) {
-      const res = await api(`${serviceUrl}/h/${token}/ops`, {
-        method: 'POST',
-        body: JSON.stringify({ ops: queued.map((o) => o.payload) }),
-      });
+      const res = await api(
+        `${serviceUrl}/h/ops`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ ops: queued.map((o) => o.payload) }),
+        },
+        token,
+      );
       if (res.status === 404) throw new Error('The household is no longer on the service (token rotated?)');
       if (!res.ok) throw new Error(`Could not send ticks (${res.status})`);
       const body = (await res.json()) as {
@@ -206,10 +217,14 @@ async function run(): Promise<SyncStatus> {
     const dirty = (await db.kv.get('sync.dirty'))?.value === true;
     let version = h.sync.lastVersion;
     if (dirty) {
-      const res = await api(`${serviceUrl}/h/${token}/doc`, {
-        method: 'PUT',
-        body: JSON.stringify({ baseVersion: version, doc: docForSync(store.get()) }),
-      });
+      const res = await api(
+        `${serviceUrl}/h/doc`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ baseVersion: version, doc: docForSync(store.get()) }),
+        },
+        token,
+      );
       if (res.status === 409) {
         const body = (await res.json()) as { version: number; doc: unknown };
         // Someone else planned in the meantime: take theirs, keep our purchases (they are ops), report it.
@@ -234,7 +249,7 @@ async function run(): Promise<SyncStatus> {
     }
     // 3. Pull.
     const lastSeq = Number((await db.kv.get('sync.lastSeq'))?.value ?? 0);
-    const res = await api(`${serviceUrl}/h/${token}/state?since=${version}&sinceSeq=${lastSeq}`);
+    const res = await api(`${serviceUrl}/h/state?since=${version}&sinceSeq=${lastSeq}`, undefined, token);
     if (res.status === 404) throw new Error('The household is no longer on the service (token rotated?)');
     if (!res.ok) throw new Error(`Could not fetch (${res.status})`);
     const data = (await res.json()) as { version: number; doc?: unknown; ops: CheckOp[]; lastSeq: number };

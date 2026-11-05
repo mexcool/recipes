@@ -17,7 +17,6 @@ const KEY = 'household';
 export class HouseholdStore {
   private doc: Household | null = null;
   private listeners = new Set<Listener>();
-  private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private ready: Promise<void> | null = null;
   public lastError: string | null = null;
 
@@ -81,9 +80,27 @@ export class HouseholdStore {
     for (const l of this.listeners) l();
   }
 
+  /** Writes are immediate but serialized: a tick made right before the app is closed is never lost. */
   private scheduleSave(): void {
-    if (this.saveTimer) clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => void this.persist(), 150);
+    this.pending = true;
+    if (!this.writing) void this.drain();
+  }
+
+  private pending = false;
+  private writing: Promise<void> | null = null;
+
+  private async drain(): Promise<void> {
+    this.writing = (async () => {
+      while (this.pending) {
+        this.pending = false;
+        await this.persist();
+      }
+    })();
+    try {
+      await this.writing;
+    } finally {
+      this.writing = null;
+    }
   }
 
   async persist(): Promise<void> {
@@ -99,11 +116,8 @@ export class HouseholdStore {
   }
 
   async flush(): Promise<void> {
-    if (this.saveTimer) {
-      clearTimeout(this.saveTimer);
-      this.saveTimer = null;
-    }
-    await this.persist();
+    if (this.writing) await this.writing;
+    if (this.pending) await this.drain();
   }
 
   async reset(): Promise<void> {

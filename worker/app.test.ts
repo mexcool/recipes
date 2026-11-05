@@ -26,35 +26,39 @@ describe('sync service', () => {
 
   it('rejects a wrong token', async () => {
     const { app } = await setup();
-    const res = await app.request('/h/not-a-token/state');
+    const res = await app.request('/h/state', { headers: { Authorization: 'Bearer not-a-token' } });
     expect(res.status).toBe(404);
   });
 
   it('returns the document only when the client is behind', async () => {
     const { app, token } = await setup();
-    const a = (await (await app.request(`/h/${token}/state?since=0`)).json()) as {
+    const a = (await (
+      await app.request(`/h/state?since=0`, { headers: { Authorization: `Bearer ${token}` } })
+    ).json()) as {
       version: number;
       doc?: unknown;
     };
     expect(a.version).toBe(1);
     expect(a.doc).toBeDefined();
-    const b = (await (await app.request(`/h/${token}/state?since=1`)).json()) as { doc?: unknown };
+    const b = (await (
+      await app.request(`/h/state?since=1`, { headers: { Authorization: `Bearer ${token}` } })
+    ).json()) as { doc?: unknown };
     expect(b.doc).toBeUndefined();
   });
 
   it('updates with compare-and-set and reports conflicts with the fresh document', async () => {
     const { app, token } = await setup();
-    const ok = await app.request(`/h/${token}/doc`, {
+    const ok = await app.request('/h/doc', {
       method: 'PUT',
       body: JSON.stringify({ baseVersion: 1, doc: doc(2) }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
     expect(ok.status).toBe(200);
     expect(((await ok.json()) as { version: number }).version).toBe(2);
-    const stale = await app.request(`/h/${token}/doc`, {
+    const stale = await app.request('/h/doc', {
       method: 'PUT',
       body: JSON.stringify({ baseVersion: 1, doc: doc(3) }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
     expect(stale.status).toBe(409);
     const body = (await stale.json()) as { version: number; doc: { marker: number } };
@@ -74,28 +78,28 @@ describe('sync service', () => {
       at,
       rev: 1,
     });
-    const first = await app.request(`/h/${token}/ops`, {
+    const first = await app.request('/h/ops', {
       method: 'POST',
       body: JSON.stringify({ ops: [op('a', true, '2026-11-08T10:00:00Z')] }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
     expect(((await first.json()) as { applied: string[] }).applied).toEqual(['a']);
-    const again = await app.request(`/h/${token}/ops`, {
+    const again = await app.request('/h/ops', {
       method: 'POST',
       body: JSON.stringify({ ops: [op('a', true, '2026-11-08T10:00:00Z')] }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
     expect(((await again.json()) as { applied: string[] }).applied).toEqual([]);
     // A newer uncheck from the other phone wins; an older check arriving late is reported as a conflict.
-    await app.request(`/h/${token}/ops`, {
+    await app.request('/h/ops', {
       method: 'POST',
       body: JSON.stringify({ ops: [op('b', false, '2026-11-08T10:05:00Z')] }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
-    const late = await app.request(`/h/${token}/ops`, {
+    const late = await app.request('/h/ops', {
       method: 'POST',
       body: JSON.stringify({ ops: [op('c', true, '2026-11-08T10:01:00Z')] }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
     const body = (await late.json()) as {
       applied: string[];
@@ -103,7 +107,9 @@ describe('sync service', () => {
     };
     expect(body.applied).toEqual(['c']);
     expect(body.conflicts).toEqual([{ opId: 'c', winner: expect.objectContaining({ opId: 'b' }) }]);
-    const state = (await (await app.request(`/h/${token}/state?sinceSeq=1`)).json()) as {
+    const state = (await (
+      await app.request(`/h/state?sinceSeq=1`, { headers: { Authorization: `Bearer ${token}` } })
+    ).json()) as {
       ops: { opId: string }[];
       lastSeq: number;
     };
@@ -113,26 +119,49 @@ describe('sync service', () => {
 
   it('validates operations and limits batch size', async () => {
     const { app, token } = await setup();
-    const bad = await app.request(`/h/${token}/ops`, {
+    const bad = await app.request('/h/ops', {
       method: 'POST',
       body: JSON.stringify({ ops: [{ opId: 'x' }] }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
     expect(bad.status).toBe(400);
   });
 
   it('rotates the token', async () => {
     const { app, token } = await setup();
-    const res = await app.request(`/h/${token}/rotate`, { method: 'POST' });
+    const res = await app.request('/h/rotate', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const { token: fresh } = (await res.json()) as { token: string };
-    expect((await app.request(`/h/${token}/state`)).status).toBe(404);
-    expect((await app.request(`/h/${fresh}/state`)).status).toBe(200);
+    expect((await app.request(`/h/state`, { headers: { Authorization: `Bearer ${token}` } })).status).toBe(
+      404,
+    );
+    expect((await app.request('/h/state', { headers: { Authorization: `Bearer ${fresh}` } })).status).toBe(
+      200,
+    );
   });
 
   it('sets no-referrer and no-store headers', async () => {
     const { app, token } = await setup();
-    const res = await app.request(`/h/${token}/state`);
+    const res = await app.request(`/h/state`, { headers: { Authorization: `Bearer ${token}` } });
     expect(res.headers.get('referrer-policy')).toBe('no-referrer');
     expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+});
+
+describe('cors', () => {
+  it('allows the Authorization header in preflight responses', async () => {
+    const app = createApp(new MemoryStore());
+    const res = await app.request('/h/state', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://app.example',
+        'Access-Control-Request-Method': 'GET',
+        'Access-Control-Request-Headers': 'authorization,content-type',
+      },
+    });
+    expect(res.status).toBe(204);
+    expect(res.headers.get('access-control-allow-headers')?.toLowerCase()).toContain('authorization');
   });
 });

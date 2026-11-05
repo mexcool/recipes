@@ -560,7 +560,7 @@ because the lunchbox is packed tonight. Before 15:00 the card shows pranzo inste
 **Cucina.** Full-screen steps with resolved amounts and pot callouts ("pesa separatamente", "cuoci insieme,
 poi pesa 200 g cotto per G.", "dividi 2 : 3"), inline timers, big type. *Fatto* asks only 👍/👎, skippable.
 
-**Non mi va (time- and consumed-aware).** One-tap options, grouped: (1) *Altro piatto, stessa spesa* — same
+**Not tonight (time- and consumed-aware).** One-tap options, grouped: (1) *Altro piatto, stessa spesa* — same
 bound foods, different dish, from the book or (v1.1) a live idea constrained to this week's purchases and
 pantry; (2) *Cambia ingrediente* — a nutritionist alternative that is in the house, with a delta line on the
 list; (3) *Mangio fuori* — the plan's eating-out templates, logged as `out`; *Stasera libero* if unused this
@@ -590,6 +590,13 @@ can mark "ho cucinato io"; a dish he proposes runs through the same validation a
 
 **First run (v1.2).** A single screen: *"Fotografa la tua dieta"*. Until then, the demo plan loads and the
 private plan is imported from JSON by the developer.
+
+---
+
+*Decision recorded during the build:* "make tonight the free meal" after lunch has been eaten is not
+offered. The plan ties the free meal to its template day, and moving a day after lunch would break the
+lunch–dinner pairing on the plate; the free meal can be moved in the morning (as a whole day), or the
+dinner can be logged as eating out.
 
 ---
 
